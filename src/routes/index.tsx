@@ -89,7 +89,7 @@ function Index() {
   const [mode, setMode] = useState<"Acheter" | "Louer">("Acheter");
   const [quartier, setQuartier] = useState("Tous");
   const [type, setType] = useState("Tous");
-  const [price, setPrice] = useState(PRICES[0].label);
+  const [price, setPrice] = useState("Tous les prix");
   const [applied, setApplied] = useState<null | { mode: string; quartier: string; type: string; max: number }>(null);
 
   const results = useMemo(() => {
