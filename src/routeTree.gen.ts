@@ -10,33 +10,53 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AcheterRouteImport } from './routes/acheter'
+import { Route as VendreRouteImport } from './routes/vendre'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AcheterRoute = AcheterRouteImport.update({
+  id: '/acheter',
+  path: '/acheter',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VendreRoute = VendreRouteImport.update({
+  id: '/vendre',
+  path: '/vendre',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/acheter': typeof AcheterRoute
+  '/vendre': typeof VendreRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/acheter': typeof AcheterRoute
+  '/vendre': typeof VendreRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/acheter': typeof AcheterRoute
+  '/vendre': typeof VendreRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/acheter' | '/vendre'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/acheter' | '/vendre'
+  id: '__root__' | '/' | '/acheter' | '/vendre'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AcheterRoute: typeof AcheterRoute
+  VendreRoute: typeof VendreRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +68,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/acheter': {
+      id: '/acheter'
+      path: '/acheter'
+      fullPath: '/acheter'
+      preLoaderRoute: typeof AcheterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/vendre': {
+      id: '/vendre'
+      path: '/vendre'
+      fullPath: '/vendre'
+      preLoaderRoute: typeof VendreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AcheterRoute: AcheterRoute,
+  VendreRoute: VendreRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
