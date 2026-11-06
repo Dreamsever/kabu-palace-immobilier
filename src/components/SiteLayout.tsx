@@ -49,7 +49,13 @@ function NavLink({
   );
 }
 
-export function SiteLayout({ children, stickyWhatsApp = true }: { children: ReactNode; stickyWhatsApp?: boolean }) {
+export function SiteLayout({
+  children,
+  stickyWhatsApp = true,
+}: {
+  children: ReactNode;
+  stickyWhatsApp?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const contactMessage = `Bonjour Kabu Palace (${WHATSAPP_DISPLAY}), je souhaite échanger avec un agent.`;
 
@@ -98,7 +104,9 @@ export function SiteLayout({ children, stickyWhatsApp = true }: { children: Reac
         <div className="mx-auto grid max-w-6xl gap-8 px-4 py-12 md:grid-cols-4">
           <div>
             <Logo />
-            <p className="mt-4 text-sm">Votre partenaire de confiance pour l'immobilier haut de gamme en RDC.</p>
+            <p className="mt-4 text-sm">
+              Votre partenaire de confiance pour l'immobilier haut de gamme en RDC.
+            </p>
           </div>
           <div>
             <h4 className="mb-3 text-sm font-bold uppercase tracking-wider text-gold">Services</h4>
@@ -138,10 +146,18 @@ export function SiteLayout({ children, stickyWhatsApp = true }: { children: Reac
               </li>
             </ul>
             <div className="mt-4 flex gap-3">
-              <a href="#" aria-label="Facebook" className="grid h-10 w-10 place-items-center rounded-full border border-gold/40 text-gold">
+              <a
+                href="#"
+                aria-label="Facebook"
+                className="grid h-10 w-10 place-items-center rounded-full border border-gold/40 text-gold"
+              >
                 <Facebook className="h-4 w-4" />
               </a>
-              <a href="#" aria-label="Instagram" className="grid h-10 w-10 place-items-center rounded-full border border-gold/40 text-gold">
+              <a
+                href="#"
+                aria-label="Instagram"
+                className="grid h-10 w-10 place-items-center rounded-full border border-gold/40 text-gold"
+              >
                 <Instagram className="h-4 w-4" />
               </a>
             </div>
@@ -174,7 +190,9 @@ export function FilterSelect({
 }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</span>
+      <span className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        {label}
+      </span>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}

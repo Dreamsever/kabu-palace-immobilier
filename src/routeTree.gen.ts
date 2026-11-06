@@ -10,17 +10,13 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AcheterRouteImport } from './routes/acheter'
 import { Route as VendreRouteImport } from './routes/vendre'
+import { Route as AcheterIndexRouteImport } from './routes/acheter/index'
+import { Route as AcheterIdRouteImport } from './routes/acheter/$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AcheterRoute = AcheterRouteImport.update({
-  id: '/acheter',
-  path: '/acheter',
   getParentRoute: () => rootRouteImport,
 } as any)
 const VendreRoute = VendreRouteImport.update({
@@ -28,35 +24,49 @@ const VendreRoute = VendreRouteImport.update({
   path: '/vendre',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AcheterIndexRoute = AcheterIndexRouteImport.update({
+  id: '/acheter/',
+  path: '/acheter/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AcheterIdRoute = AcheterIdRouteImport.update({
+  id: '/acheter/$id',
+  path: '/acheter/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/acheter': typeof AcheterRoute
   '/vendre': typeof VendreRoute
+  '/acheter/$id': typeof AcheterIdRoute
+  '/acheter/': typeof AcheterIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/acheter': typeof AcheterRoute
   '/vendre': typeof VendreRoute
+  '/acheter/$id': typeof AcheterIdRoute
+  '/acheter': typeof AcheterIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/acheter': typeof AcheterRoute
   '/vendre': typeof VendreRoute
+  '/acheter/$id': typeof AcheterIdRoute
+  '/acheter/': typeof AcheterIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/acheter' | '/vendre'
+  fullPaths: '/' | '/vendre' | '/acheter/$id' | '/acheter/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/acheter' | '/vendre'
-  id: '__root__' | '/' | '/acheter' | '/vendre'
+  to: '/' | '/vendre' | '/acheter/$id' | '/acheter'
+  id: '__root__' | '/' | '/vendre' | '/acheter/$id' | '/acheter/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AcheterRoute: typeof AcheterRoute
   VendreRoute: typeof VendreRoute
+  AcheterIdRoute: typeof AcheterIdRoute
+  AcheterIndexRoute: typeof AcheterIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -68,13 +78,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/acheter': {
-      id: '/acheter'
-      path: '/acheter'
-      fullPath: '/acheter'
-      preLoaderRoute: typeof AcheterRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/vendre': {
       id: '/vendre'
       path: '/vendre'
@@ -82,13 +85,28 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VendreRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/acheter/': {
+      id: '/acheter/'
+      path: '/acheter'
+      fullPath: '/acheter/'
+      preLoaderRoute: typeof AcheterIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/acheter/$id': {
+      id: '/acheter/$id'
+      path: '/acheter/$id'
+      fullPath: '/acheter/$id'
+      preLoaderRoute: typeof AcheterIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AcheterRoute: AcheterRoute,
   VendreRoute: VendreRoute,
+  AcheterIdRoute: AcheterIdRoute,
+  AcheterIndexRoute: AcheterIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
