@@ -4,8 +4,9 @@ import { Search } from "lucide-react";
 import hero from "@/assets/hero.jpg";
 import { ListingCard } from "@/components/ListingCard";
 import { FilterSelect, SiteLayout } from "@/components/SiteLayout";
-import { LISTINGS, PROPERTY_TYPES, QUARTIERS } from "@/lib/listings";
+import { PROPERTY_TYPES, QUARTIERS } from "@/lib/listings";
 import { WHATSAPP_DISPLAY } from "@/lib/whatsapp";
+import { useListings } from "@/hooks/use-listings";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -36,6 +37,7 @@ const PRICES = [
 ];
 
 function Index() {
+  const { listings: allListings, loading } = useListings();
   const [mode, setMode] = useState<"Acheter" | "Louer">("Acheter");
   const [quartier, setQuartier] = useState("Tous");
   const [type, setType] = useState("Tous");
@@ -48,15 +50,15 @@ function Index() {
   }>(null);
 
   const results = useMemo(() => {
-    if (!applied) return LISTINGS;
-    return LISTINGS.filter(
+    if (!applied) return allListings;
+    return allListings.filter(
       (l) =>
         l.mode === applied.mode &&
         (applied.quartier === "Tous" || l.quartier === applied.quartier) &&
         (applied.type === "Tous" || l.type === applied.type) &&
         l.price <= applied.max,
     );
-  }, [applied]);
+  }, [applied, allListings]);
 
   const search = (e: React.FormEvent) => {
     e.preventDefault();
@@ -151,7 +153,13 @@ function Index() {
           )}
         </div>
 
-        {results.length === 0 ? (
+        {loading ? (
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="animate-pulse rounded-2xl bg-muted h-80 border border-border/60" />
+            ))}
+          </div>
+        ) : results.length === 0 ? (
           <p className="rounded-xl bg-muted p-8 text-center text-muted-foreground">
             Aucun bien ne correspond. Contactez-nous sur WhatsApp, nous avons d'autres biens hors
             catalogue.

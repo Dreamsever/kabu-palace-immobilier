@@ -1,5 +1,5 @@
 export type Listing = {
-  id: number;
+  id: number | string; // number pour les données statiques, uuid string pour Supabase
   title: string;
   quartier: string;
   commune?: string;
@@ -486,6 +486,10 @@ export const SALE_PRICE_FILTERS = [
 export const fmtPrice = (n: number) => n.toLocaleString("fr-FR").replace(/\u202f/g, " ");
 
 export function getListingById(id: number | string): Listing | undefined {
+  // Support uuid (string) ou id numérique legacy
+  if (typeof id === "string" && isNaN(Number(id))) {
+    return LISTINGS.find((l) => String(l.id) === id);
+  }
   const numericId = typeof id === "string" ? Number(id) : id;
   return LISTINGS.find((l) => l.id === numericId);
 }

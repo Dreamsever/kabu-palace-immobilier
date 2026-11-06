@@ -1,11 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowUpDown, CheckCircle2, RotateCcw, SlidersHorizontal, Sparkles } from "lucide-react";
+import { ArrowUpDown, CheckCircle2, Database, RotateCcw, SlidersHorizontal, Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ListingCard } from "@/components/ListingCard";
 import { FilterSelect, SiteLayout } from "@/components/SiteLayout";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
-import { LISTINGS, PROPERTY_TYPES, QUARTIERS, SALE_PRICE_FILTERS } from "@/lib/listings";
+import { PROPERTY_TYPES, QUARTIERS, SALE_PRICE_FILTERS } from "@/lib/listings";
 import { WHATSAPP_DISPLAY } from "@/lib/whatsapp";
+import { useListings } from "@/hooks/use-listings";
 
 export const Route = createFileRoute("/acheter/")({
   head: () => ({
@@ -23,6 +24,7 @@ export const Route = createFileRoute("/acheter/")({
 type SortOption = "recommandes" | "prix-croissant" | "prix-decroissant" | "surface-decroissante";
 
 function AcheterPage() {
+  const { listings: allListings, loading, fromSupabase } = useListings();
   const [quartier, setQuartier] = useState<string>("Tous");
   const [pricePreset, setPricePreset] = useState<string>(SALE_PRICE_FILTERS[0].label);
   const [propertyType, setPropertyType] = useState<string>("Tous");
@@ -65,7 +67,7 @@ function AcheterPage() {
   };
 
   const results = useMemo(() => {
-    const filtered = LISTINGS.filter((l) => {
+    const filtered = allListings.filter((l) => {
       if (l.mode !== "Acheter") return false;
       if (quartier !== "Tous" && l.quartier !== quartier) return false;
       if (propertyType !== "Tous" && l.type !== propertyType) return false;
@@ -270,13 +272,24 @@ function AcheterPage() {
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="text-sm font-semibold text-foreground">
-              {results.length} bien{results.length > 1 ? "s" : ""} disponible
-              {results.length > 1 ? "s" : ""} à l'achat
-              {quartier !== "Tous" && <span className="text-gold font-bold"> · {quartier}</span>}
-              {!useCustomRange && pricePreset !== "Tous les prix" && (
-                <span className="text-muted-foreground"> ({pricePreset})</span>
+              {loading ? (
+                <span className="text-muted-foreground">Chargement des annonces…</span>
+              ) : (
+                <>
+                  {results.length} bien{results.length > 1 ? "s" : ""} disponible
+                  {results.length > 1 ? "s" : ""} à l'achat
+                  {quartier !== "Tous" && <span className="text-gold font-bold"> · {quartier}</span>}
+                  {!useCustomRange && pricePreset !== "Tous les prix" && (
+                    <span className="text-muted-foreground"> ({pricePreset})</span>
+                  )}
+                </>
               )}
             </p>
+            {fromSupabase && (
+              <p className="mt-1 flex items-center gap-1 text-xs text-emerald-600 font-medium">
+                <Database className="h-3 w-3" /> Données en direct — Supabase
+              </p>
+            )}
           </div>
 
           <div className="text-xs text-muted-foreground">
@@ -288,7 +301,16 @@ function AcheterPage() {
         </div>
 
         {/* Listings Grid or Empty State */}
-        {results.length === 0 ? (
+        {loading ? (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div
+                key={i}
+                className="animate-pulse rounded-2xl bg-muted h-80 border border-border/60"
+              />
+            ))}
+          </div>
+        ) : results.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-border bg-card p-8 md:p-12 text-center shadow-sm">
             <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-gold/10 text-gold mb-4">
               <SlidersHorizontal className="h-6 w-6" />
