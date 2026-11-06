@@ -4,25 +4,26 @@
  * Couche d'accès à la table `properties` de Supabase.
  *
  * Schéma Supabase (table `properties`) :
- *   id            uuid      (PK, gen_random_uuid())
- *   created_at    timestamptz
- *   Titre         text
- *   categorie     text      (ex: "Acheter" | "Louer")
- *   type          text      (ex: "Villa" | "Appartement" | ...)
- *   district      text      (quartier / district)
- *   prix          numeric
- *   monnaie       text      (défaut "USD")
- *   chambres      int4
- *   salles_de_bain int4
- *   surface       numeric
- *   description   text
- *   images        text      (tableau sérialisé, ex: '["url1","url2"]')
- *   status        text      (défaut "disponible")
- *   listé         bool      (true = annonce publiée)
+ *   id             uuid         (PK, gen_random_uuid())
+ *   created_at     timestamptz  (now())
+ *   titre          text         Titre de l'annonce
+ *   categorie      text         "Acheter" | "Louer"
+ *   type           text         "Villa" | "Appartement" | "Bureau" | "Terrain" | "Maison" | "Immeuble"
+ *   district       text         Quartier (Gombe, Ngaliema, Limete, ...)
+ *   prix           numeric      Prix en USD
+ *   monnaie        text         "USD" (défaut) | "CDF"
+ *   chambres       int4         Nombre de chambres
+ *   salles_de_bain int4         Nombre de salles de bain
+ *   surface        numeric      Surface en m²
+ *   description    text         Description de l'annonce
+ *   images         text         JSON array d'URLs : '["url1","url2"]'
+ *   status         text         "disponible" | "vendu" | "loué" | "sous compromis" | "réservé"
+ *   liste          bool         true = annonce visible sur le site (défaut: false)
  *
- * RLS : activée. Pour que les annonces soient visibles sans authentification,
- * créez la politique suivante dans Supabase → Authentication → Policies :
- *   Table : properties | Operation : SELECT | Using : (liste = true)
+ * RLS : activée. Politique requise pour SELECT anon :
+ *   CREATE POLICY "Lecture publique"
+ *   ON public.properties FOR SELECT TO anon
+ *   USING (liste = true);
  */
 
 import { supabase } from './supabase';
@@ -32,7 +33,7 @@ import type { Listing } from './listings';
 export interface SupabaseProperty {
   id: string;
   created_at: string;
-  Titre: string | null;
+  titre: string | null;       // nom minuscule, sans accent
   categorie: string | null;
   type: string | null;
   district: string | null;
@@ -44,7 +45,7 @@ export interface SupabaseProperty {
   description: string | null;
   images: string | null;
   status: string | null;
-  listé: boolean | null;
+  liste: boolean | null;      // sans accent (évite les bugs d'encodage)
 }
 
 /**
@@ -98,8 +99,8 @@ export function mapPropertyToListing(p: SupabaseProperty): Listing {
     statusMap[(p.status ?? '').toLowerCase()] ?? (p.status ?? 'Disponible');
 
   return {
-    id: p.id, // uuid gardé comme string (compatible avec le routeur)
-    title: p.Titre ?? 'Bien immobilier',
+    id: p.id,
+    title: p.titre ?? 'Bien immobilier',
     quartier: p.district ?? '',
     type: p.type ?? '',
     mode,
@@ -111,12 +112,11 @@ export function mapPropertyToListing(p: SupabaseProperty): Listing {
     gallery: images,
     availability,
     description: p.description ?? '',
-    // Champs non présents dans Supabase → valeurs par défaut
     history: '',
     legalStatus: '',
     features: [],
     locationHighlights: [],
-    featured: p.listé ?? false,
+    featured: p.liste ?? false,
   };
 }
 
@@ -134,7 +134,7 @@ export async function fetchProperties(): Promise<FetchResult<Listing>> {
   const { data, error } = await supabase
     .from('properties')
     .select('*')
-    .eq('listé', true)
+    .eq('liste', true)
     .order('created_at', { ascending: false });
 
   if (error) {
