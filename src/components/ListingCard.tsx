@@ -10,7 +10,7 @@ export function ListingCard({ listing }: { listing: Listing }) {
     <article className="group overflow-hidden rounded-2xl bg-card shadow-card border border-border/80 transition duration-300 hover:shadow-xl hover:-translate-y-1">
       <Link to={detailPath} params={params} className="block relative aspect-[4/3] overflow-hidden">
         <img
-          src={listing.img}
+          src={listing.img || "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=75"}
           alt={listing.title}
           loading="lazy"
           width={800}
@@ -22,7 +22,7 @@ export function ListingCard({ listing }: { listing: Listing }) {
         </span>
         {listing.availability && (
           <span className="absolute right-3 top-3 rounded-full bg-card/90 backdrop-blur px-2.5 py-1 text-[11px] font-semibold text-foreground shadow-sm">
-            {listing.availability.split("—")[0].trim()}
+            {(listing.availability.split("—")[0] ?? listing.availability).trim()}
           </span>
         )}
       </Link>

@@ -1,9 +1,8 @@
 /**
- * useListings.ts
+ * use-listings.ts
  *
- * Hook React qui charge les annonces depuis Supabase.
- * Si Supabase est inaccessible ou ne retourne rien (ex: RLS sans politique),
- * il bascule automatiquement sur les données statiques LISTINGS.
+ * Hook React sécurisé pour charger les annonces depuis Supabase
+ * avec fallback immédiat sur les annonces statiques LISTINGS.
  */
 
 import { useEffect, useState } from 'react';
@@ -14,13 +13,12 @@ export type UseListingsResult = {
   listings: Listing[];
   loading: boolean;
   error: string | null;
-  /** true si les données viennent de Supabase, false si données statiques */
   fromSupabase: boolean;
 };
 
 export function useListings(): UseListingsResult {
-  const [listings, setListings] = useState<Listing[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [listings, setListings] = useState<Listing[]>(LISTINGS);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fromSupabase, setFromSupabase] = useState(false);
 
@@ -31,31 +29,41 @@ export function useListings(): UseListingsResult {
       setLoading(true);
       setError(null);
 
-      const { data, error: fetchError } = await fetchProperties();
+      try {
+        const { data, error: fetchError } = await fetchProperties();
 
-      if (cancelled) return;
+        if (cancelled) return;
 
-      if (fetchError) {
-        // Erreur réseau ou Supabase → fallback données statiques
-        console.warn('[useListings] Supabase error, using static data:', fetchError);
-        setListings(LISTINGS);
-        setFromSupabase(false);
-        setError(fetchError);
-      } else if (data.length === 0) {
-        // RLS sans politique ou table vide → fallback données statiques
-        console.warn('[useListings] Supabase returned 0 results (RLS policy missing?), using static data');
-        setListings(LISTINGS);
-        setFromSupabase(false);
-      } else {
-        setListings(data);
-        setFromSupabase(true);
+        if (fetchError) {
+          // Erreur réseau ou Supabase : conserver les données statiques
+          setListings(LISTINGS);
+          setFromSupabase(false);
+          setError(fetchError);
+        } else if (data.length === 0) {
+          // Table vide ou non configurée : conserver les données statiques
+          setListings(LISTINGS);
+          setFromSupabase(false);
+        } else {
+          setListings(data);
+          setFromSupabase(true);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setListings(LISTINGS);
+          setFromSupabase(false);
+          setError(String(err));
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
-
-      setLoading(false);
     }
 
     load();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return { listings, loading, error, fromSupabase };

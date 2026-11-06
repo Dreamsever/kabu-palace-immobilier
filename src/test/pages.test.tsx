@@ -37,7 +37,9 @@ describe("Acheter page (/acheter)", () => {
     const articles = screen.getAllByRole("article");
     expect(articles.length).toBeGreaterThan(0);
 
-    const firstCardAcheterBtn = within(articles[0]).getByRole("link", { name: /^Acheter/i });
+    const firstArticle = articles[0];
+    expect(firstArticle).toBeDefined();
+    const firstCardAcheterBtn = within(firstArticle!).getByRole("link", { name: /^Acheter/i });
     expect(firstCardAcheterBtn).toBeInTheDocument();
     expect(firstCardAcheterBtn.getAttribute("href")).toMatch(/\/acheter\/\d+/);
   });

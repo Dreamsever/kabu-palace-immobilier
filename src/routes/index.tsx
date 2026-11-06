@@ -153,7 +153,7 @@ function Index() {
           )}
         </div>
 
-        {loading ? (
+        {results.length === 0 && loading ? (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="animate-pulse rounded-2xl bg-muted h-80 border border-border/60" />

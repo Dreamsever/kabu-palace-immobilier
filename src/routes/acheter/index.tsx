@@ -301,7 +301,7 @@ function AcheterPage() {
         </div>
 
         {/* Listings Grid or Empty State */}
-        {loading ? (
+        {results.length === 0 && loading ? (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
               <div

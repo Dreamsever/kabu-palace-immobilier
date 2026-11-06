@@ -1,67 +1,40 @@
 /**
  * supabase-properties.ts
  *
- * Couche d'accès à la table `properties` de Supabase.
- *
- * Schéma Supabase (table `properties`) :
- *   id             uuid         (PK, gen_random_uuid())
- *   created_at     timestamptz  (now())
- *   titre          text         Titre de l'annonce
- *   categorie      text         "Acheter" | "Louer"
- *   type           text         "Villa" | "Appartement" | "Bureau" | "Terrain" | "Maison" | "Immeuble"
- *   district       text         Quartier (Gombe, Ngaliema, Limete, ...)
- *   prix           numeric      Prix en USD
- *   monnaie        text         "USD" (défaut) | "CDF"
- *   chambres       int4         Nombre de chambres
- *   salles_de_bain int4         Nombre de salles de bain
- *   surface        numeric      Surface en m²
- *   description    text         Description de l'annonce
- *   images         text         JSON array d'URLs : '["url1","url2"]'
- *   status         text         "disponible" | "vendu" | "loué" | "sous compromis" | "réservé"
- *   liste          bool         true = annonce visible sur le site (défaut: false)
- *
- * RLS : activée. Politique requise pour SELECT anon :
- *   CREATE POLICY "Lecture publique"
- *   ON public.properties FOR SELECT TO anon
- *   USING (liste = true);
+ * Couche d'accès sécurisée à la table `properties` de Supabase.
+ * Tolérante aux erreurs et variations de casse des colonnes (titre/Titre, liste/listé).
  */
 
 import { supabase } from './supabase';
 import type { Listing } from './listings';
 
-/** Type brut renvoyé par Supabase. */
 export interface SupabaseProperty {
   id: string;
-  created_at: string;
-  titre: string | null;       // nom minuscule, sans accent
-  categorie: string | null;
-  type: string | null;
-  district: string | null;
-  prix: number | null;
-  monnaie: string | null;
-  chambres: number | null;
-  salles_de_bain: number | null;
-  surface: number | null;
-  description: string | null;
-  images: string | null;
-  status: string | null;
-  liste: boolean | null;      // sans accent (évite les bugs d'encodage)
+  created_at?: string;
+  titre?: string | null;
+  Titre?: string | null;
+  categorie?: string | null;
+  type?: string | null;
+  district?: string | null;
+  quartier?: string | null;
+  prix?: number | null;
+  monnaie?: string | null;
+  chambres?: number | null;
+  salles_de_bain?: number | null;
+  surface?: number | null;
+  description?: string | null;
+  images?: string | null;
+  status?: string | null;
+  liste?: boolean | null;
+  listé?: boolean | null;
 }
 
-/**
- * Parse le champ `images` stocké en JSON ou en texte PostgreSQL.
- * Formats supportés :
- *   - JSON array: '["url1","url2"]'
- *   - PostgreSQL array literal: '{url1,url2}'
- *   - URL simple : 'https://...'
- */
-function parseImages(raw: string | null): string[] {
+function parseImages(raw: string | null | undefined): string[] {
   if (!raw || raw === 'array[]::text[]' || raw.trim() === '{}') return [];
   try {
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) return parsed.filter(Boolean);
   } catch {
-    // Format PostgreSQL littéral : {url1,url2}
     if (raw.startsWith('{') && raw.endsWith('}')) {
       return raw
         .slice(1, -1)
@@ -69,25 +42,18 @@ function parseImages(raw: string | null): string[] {
         .map((s) => s.trim().replace(/^"|"$/g, ''))
         .filter(Boolean);
     }
-    // URL simple
     if (raw.startsWith('http')) return [raw];
   }
   return [];
 }
 
-/**
- * Convertit une ligne Supabase en objet `Listing` compatible
- * avec les composants existants du projet.
- */
 export function mapPropertyToListing(p: SupabaseProperty): Listing {
   const images = parseImages(p.images);
-  const img = images[0] ?? '';
+  const img = images[0] ?? 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=75';
 
-  // Détermine le mode Acheter / Louer depuis la colonne `categorie`
   const rawMode = (p.categorie ?? '').toLowerCase();
   const mode: 'Acheter' | 'Louer' = rawMode.includes('lou') ? 'Louer' : 'Acheter';
 
-  // Statut → disponibilité lisible
   const statusMap: Record<string, string> = {
     disponible: 'Disponible',
     vendu: 'Vendu',
@@ -98,72 +64,99 @@ export function mapPropertyToListing(p: SupabaseProperty): Listing {
   const availability =
     statusMap[(p.status ?? '').toLowerCase()] ?? (p.status ?? 'Disponible');
 
+  const title = p.titre ?? p.Titre ?? 'Bien immobilier';
+  const quartier = p.district ?? p.quartier ?? 'Kinshasa';
+  const isListed = p.liste ?? p.listé ?? true;
+
   return {
     id: p.id,
-    title: p.titre ?? 'Bien immobilier',
-    quartier: p.district ?? '',
-    type: p.type ?? '',
+    title,
+    quartier,
+    type: p.type ?? 'Villa',
     mode,
-    price: p.prix ?? 0,
-    beds: p.chambres ?? 0,
-    baths: p.salles_de_bain ?? 0,
-    area: p.surface ?? 0,
+    price: p.prix ? Number(p.prix) : 0,
+    beds: p.chambres ? Number(p.chambres) : 0,
+    baths: p.salles_de_bain ? Number(p.salles_de_bain) : 0,
+    area: p.surface ? Number(p.surface) : 0,
     img,
-    gallery: images,
+    gallery: images.length > 0 ? images : [img],
     availability,
     description: p.description ?? '',
     history: '',
     legalStatus: '',
     features: [],
     locationHighlights: [],
-    featured: p.liste ?? false,
+    featured: isListed,
   };
 }
 
-/** Résultat d'une requête Supabase. */
 export interface FetchResult<T> {
   data: T[];
   error: string | null;
 }
 
-/**
- * Récupère toutes les annonces publiées (listé = true).
- * Retourne un tableau vide en cas d'erreur plutôt que de planter l'UI.
- */
 export async function fetchProperties(): Promise<FetchResult<Listing>> {
-  const { data, error } = await supabase
-    .from('properties')
-    .select('*')
-    .eq('liste', true)
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    console.error('[Supabase] fetchProperties error:', error.message);
-    return { data: [], error: error.message };
+  if (!supabase) {
+    return { data: [], error: 'Supabase client non configuré' };
   }
 
-  return {
-    data: ((data ?? []) as SupabaseProperty[]).map(mapPropertyToListing),
-    error: null,
-  };
+  try {
+    // Essai 1 : avec filtre `liste = true`
+    let query = supabase.from('properties').select('*').order('created_at', { ascending: false });
+
+    const resWithFilter = await query.eq('liste', true);
+    if (!resWithFilter.error && resWithFilter.data && resWithFilter.data.length > 0) {
+      return {
+        data: (resWithFilter.data as SupabaseProperty[]).map(mapPropertyToListing),
+        error: null,
+      };
+    }
+
+    // Essai 2 : si aucun résultat ou colonne `liste` inexistante, sélectionne tout
+    const resAll = await supabase.from('properties').select('*').order('created_at', { ascending: false });
+    if (resAll.error) {
+      console.warn('[Supabase] fetchProperties error:', resAll.error.message);
+      return { data: [], error: resAll.error.message };
+    }
+
+    const items = (resAll.data ?? []) as SupabaseProperty[];
+    // Filtrer côté client si le flag existe
+    const filtered = items.filter((p) => (p.liste !== false && p.listé !== false));
+
+    return {
+      data: (filtered.length > 0 ? filtered : items).map(mapPropertyToListing),
+      error: null,
+    };
+  } catch (err) {
+    console.warn('[Supabase] fetchProperties exception:', err);
+    return { data: [], error: String(err) };
+  }
 }
 
-/**
- * Récupère une annonce par son id (uuid ou numérique legacy).
- */
 export async function fetchPropertyById(
   id: string,
 ): Promise<{ data: Listing | null; error: string | null }> {
-  const { data, error } = await supabase
-    .from('properties')
-    .select('*')
-    .eq('id', id)
-    .single();
-
-  if (error) {
-    console.error('[Supabase] fetchPropertyById error:', error.message);
-    return { data: null, error: error.message };
+  if (!supabase) {
+    return { data: null, error: 'Supabase client non configuré' };
   }
 
-  return { data: mapPropertyToListing(data as SupabaseProperty), error: null };
+  try {
+    const { data, error } = await supabase
+      .from('properties')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (error) {
+      console.warn('[Supabase] fetchPropertyById error:', error.message);
+      return { data: null, error: error.message };
+    }
+
+    if (!data) return { data: null, error: null };
+
+    return { data: mapPropertyToListing(data as SupabaseProperty), error: null };
+  } catch (err) {
+    console.warn('[Supabase] fetchPropertyById exception:', err);
+    return { data: null, error: String(err) };
+  }
 }

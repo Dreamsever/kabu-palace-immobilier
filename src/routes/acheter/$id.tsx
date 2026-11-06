@@ -19,11 +19,12 @@ import {
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ListingCard } from "@/components/ListingCard";
 import { SiteLayout } from "@/components/SiteLayout";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
-import { fmtPrice, getListingById, LISTINGS } from "@/lib/listings";
+import { fmtPrice, getListingById, LISTINGS, type Listing } from "@/lib/listings";
+import { fetchPropertyById } from "@/lib/supabase-properties";
 import { WHATSAPP_DISPLAY, WHATSAPP_E164 } from "@/lib/whatsapp";
 
 export const Route = createFileRoute("/acheter/$id")({
@@ -50,7 +51,23 @@ export const Route = createFileRoute("/acheter/$id")({
 
 function ListingDetailPage() {
   const { id } = Route.useParams();
-  const listing = useMemo(() => getListingById(id), [id]);
+  const staticListing = useMemo(() => getListingById(id), [id]);
+  const [supabaseListing, setSupabaseListing] = useState<Listing | null>(null);
+
+  useEffect(() => {
+    if (staticListing) return;
+    let cancelled = false;
+    fetchPropertyById(id).then(({ data }) => {
+      if (!cancelled && data) {
+        setSupabaseListing(data);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [id, staticListing]);
+
+  const listing = staticListing ?? supabaseListing;
 
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
   const [copiedLink, setCopiedLink] = useState(false);
