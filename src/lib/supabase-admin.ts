@@ -177,6 +177,41 @@ export async function updatePropertyAvailability(id: string, newAvailability: st
   });
 }
 
+export async function uploadPropertyImage(file: File): Promise<string> {
+  if (!supabase) throw new Error('Client Supabase non initialisé');
+
+  const fileExt = file.name.split('.').pop() || 'jpg';
+  const cleanExt = fileExt.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${cleanExt || 'jpg'}`;
+  const filePath = `properties/${fileName}`;
+
+  try {
+    const { data, error } = await supabase.storage
+      .from('property-images')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false,
+      });
+
+    if (!error && data) {
+      const { data: urlData } = supabase.storage
+        .from('property-images')
+        .getPublicUrl(data.path);
+      return urlData.publicUrl;
+    }
+  } catch (err) {
+    console.warn('[Storage] Upload failed, falling back to data URL:', err);
+  }
+
+  // Fallback si le bucket Storage n'a pas encore été créé dans Supabase
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = (e) => reject(e);
+    reader.readAsDataURL(file);
+  });
+}
+
 // 3. Leads Propriétaires (Vendre mon bien)
 export async function fetchSellerLeads(): Promise<SellerLead[]> {
   if (!supabase) return [];

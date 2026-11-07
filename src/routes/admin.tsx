@@ -1,5 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
+  ArrowLeft,
+  ArrowRight,
   Building2,
   Calendar,
   Check,
@@ -14,6 +16,7 @@ import {
   Image as ImageIcon,
   KeyRound,
   Layers,
+  Link2,
   LogOut,
   MapPin,
   Maximize,
@@ -25,6 +28,7 @@ import {
   Sparkles,
   Star,
   Trash2,
+  Upload,
   Users,
   X,
 } from "lucide-react";
@@ -42,6 +46,7 @@ import {
   togglePropertyVisibility,
   updateProperty,
   updatePropertyAvailability,
+  uploadPropertyImage,
   type PropertyFormData,
   type SellerLead,
 } from "@/lib/supabase-admin";
@@ -136,9 +141,96 @@ export default function AdminPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<PropertyFormData>(DEFAULT_FORM);
   const [newImageUrl, setNewImageUrl] = useState("");
+  const [multiUrlInput, setMultiUrlInput] = useState("");
+  const [photoMethod, setPhotoMethod] = useState<"upload" | "multi" | "single">("upload");
+  const [uploadingFiles, setUploadingFiles] = useState(false);
+  const [uploadProgressText, setUploadProgressText] = useState("");
   const [customAtout, setCustomAtout] = useState("");
   const [customPointFort, setCustomPointFort] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  // Gestion du téléversement de fichiers
+  const handleFileUpload = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setUploadingFiles(true);
+    setUploadProgressText(`Téléversement de ${files.length} photo(s)…`);
+
+    const uploadedUrls: string[] = [];
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (file) {
+          setUploadProgressText(`Téléversement de la photo ${i + 1}/${files.length}…`);
+          const url = await uploadPropertyImage(file);
+          if (url) uploadedUrls.push(url);
+        }
+      }
+      setFormData((prev) => ({
+        ...prev,
+        images: [...prev.images, ...uploadedUrls],
+      }));
+      showNotification(`${uploadedUrls.length} photo(s) téléversée(s) avec succès !`);
+    } catch (err) {
+      alert("Erreur lors du téléversement : " + String(err));
+    } finally {
+      setUploadingFiles(false);
+      setUploadProgressText("");
+    }
+  };
+
+  // Gestion des URLs multiples (séparées par des virgules, retours à la ligne ou espaces)
+  const handleAddMultipleUrls = () => {
+    if (!multiUrlInput.trim()) return;
+
+    // Découpage automatique par : retours à la ligne, virgules, points-virgules ou espaces
+    const urls = multiUrlInput
+      .split(/[\n,;\s]+/)
+      .map((u) => u.trim())
+      .filter((u) => u.startsWith("http://") || u.startsWith("https://") || u.startsWith("data:image"));
+
+    if (urls.length === 0) {
+      alert("Aucune URL valide trouvée. Les URLs doivent commencer par http:// ou https://");
+      return;
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      images: [...prev.images, ...urls],
+    }));
+    setMultiUrlInput("");
+    showNotification(`${urls.length} photo(s) ajoutée(s) à l'annonce !`);
+  };
+
+  // Définir une photo comme photo de couverture (principale)
+  const handleSetCoverPhoto = (index: number) => {
+    if (index === 0) return;
+    setFormData((prev) => {
+      const selected = prev.images[index];
+      if (!selected) return prev;
+      const rest = prev.images.filter((_, i) => i !== index);
+      return {
+        ...prev,
+        images: [selected, ...rest],
+      };
+    });
+    showNotification("Photo définie comme couverture principale !");
+  };
+
+  // Déplacer l'ordre d'une photo
+  const handleMovePhoto = (fromIndex: number, direction: "left" | "right") => {
+    const toIndex = direction === "left" ? fromIndex - 1 : fromIndex + 1;
+    if (toIndex < 0 || toIndex >= formData.images.length) return;
+    setFormData((prev) => {
+      const newImages = [...prev.images];
+      const temp = newImages[fromIndex];
+      const target = newImages[toIndex];
+      if (temp !== undefined && target !== undefined) {
+        newImages[fromIndex] = target;
+        newImages[toIndex] = temp;
+      }
+      return { ...prev, images: newImages };
+    });
+  };
 
   // Check existing session
   useEffect(() => {
@@ -1058,64 +1150,230 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              {/* Photos / Images */}
-              <div className="pt-4 border-t border-border/80 space-y-3">
-                <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                  Photos du bien (URLs directes)
-                </label>
+              {/* Photos / Images - Système complet d'upload & URLs multiples */}
+              <div className="pt-5 border-t border-border/80 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-navy">
+                      Photos du bien ({formData.images.length} photo{formData.images.length > 1 ? "s" : ""})
+                    </label>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      La première photo de la liste sera utilisée comme <strong>photo principale de couverture</strong>.
+                    </p>
+                  </div>
 
-                <div className="flex gap-2">
-                  <input
-                    type="url"
-                    placeholder="Coller l'URL d'une photo (https://...)"
-                    value={newImageUrl}
-                    onChange={(e) => setNewImageUrl(e.target.value)}
-                    className="h-11 flex-1 rounded-xl border border-input bg-card px-4 text-xs text-foreground outline-none focus:ring-2 focus:ring-gold"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (newImageUrl.trim()) {
-                        setFormData({
-                          ...formData,
-                          images: [...formData.images, newImageUrl.trim()],
-                        });
-                        setNewImageUrl("");
-                      }
-                    }}
-                    className="rounded-xl bg-navy px-4 text-xs font-bold text-gold hover:opacity-90 transition"
-                  >
-                    Ajouter photo
-                  </button>
+                  {/* Méthode d'ajout */}
+                  <div className="flex items-center gap-1.5 rounded-xl bg-muted p-1">
+                    <button
+                      type="button"
+                      onClick={() => setPhotoMethod("upload")}
+                      className={`flex items-center gap-1 rounded-lg px-3 py-1 text-xs font-bold transition ${
+                        photoMethod === "upload"
+                          ? "bg-navy text-gold shadow-sm"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <Upload className="h-3.5 w-3.5" /> Uploader des fichiers
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPhotoMethod("multi")}
+                      className={`flex items-center gap-1 rounded-lg px-3 py-1 text-xs font-bold transition ${
+                        photoMethod === "multi"
+                          ? "bg-navy text-gold shadow-sm"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <Link2 className="h-3.5 w-3.5" /> Coller plusieurs URLs
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPhotoMethod("single")}
+                      className={`flex items-center gap-1 rounded-lg px-3 py-1 text-xs font-bold transition ${
+                        photoMethod === "single"
+                          ? "bg-navy text-gold shadow-sm"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <Plus className="h-3.5 w-3.5" /> 1 par 1
+                    </button>
+                  </div>
                 </div>
 
-                {/* Galerie des photos ajoutées */}
-                <div className="flex flex-wrap gap-3 pt-2">
-                  {formData.images.map((img, index) => (
-                    <div
-                      key={img + index}
-                      className="relative h-20 w-28 rounded-xl overflow-hidden border border-border group"
-                    >
-                      <img src={img} alt="Aperçu" className="h-full w-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setFormData({
-                            ...formData,
-                            images: formData.images.filter((_, i) => i !== index),
-                          })
-                        }
-                        className="absolute top-1 right-1 grid h-5 w-5 place-items-center rounded-full bg-destructive text-white opacity-90 group-hover:opacity-100 transition"
-                        title="Retirer cette photo"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                      <span className="absolute bottom-1 left-1 rounded bg-black/60 px-1 text-[9px] text-white">
-                        {index === 0 ? "Principale" : `#${index + 1}`}
+                {/* MÉTHODE 1 : UPLOAD DEPUIS SMARTPHONE OU PC */}
+                {photoMethod === "upload" && (
+                  <div className="rounded-2xl border-2 border-dashed border-gold/40 bg-gold/5 p-6 text-center hover:bg-gold/10 transition">
+                    <label className="cursor-pointer flex flex-col items-center">
+                      <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-gold-gradient text-gold-foreground mb-3 shadow-md">
+                        <Upload className={`h-6 w-6 ${uploadingFiles ? "animate-bounce" : ""}`} />
+                      </div>
+                      <span className="text-sm font-bold text-navy">
+                        {uploadingFiles ? uploadProgressText : "Cliquez ici pour sélectionner vos photos ou glissez-les ici"}
+                      </span>
+                      <span className="text-xs text-muted-foreground mt-1">
+                        Formats acceptés : JPG, PNG, WEBP · Vous pouvez sélectionner plusieurs photos en même temps
+                      </span>
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        disabled={uploadingFiles}
+                        onChange={(e) => handleFileUpload(e.target.files)}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                )}
+
+                {/* MÉTHODE 2 : COLLER PLUSIEURS URLS (séparation par retour à la ligne ou virgule) */}
+                {photoMethod === "multi" && (
+                  <div className="space-y-2 rounded-2xl border border-border bg-muted/40 p-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-foreground">
+                        Collez vos liens d'images (une par ligne ou séparées par des virgules) :
+                      </span>
+                      <span className="text-[11px] text-muted-foreground">
+                        Ex: https://image1.jpg, https://image2.jpg
                       </span>
                     </div>
-                  ))}
-                </div>
+                    <textarea
+                      rows={3}
+                      placeholder={`https://images.unsplash.com/photo-1...\nhttps://images.unsplash.com/photo-2...\nou séparées par des virgules`}
+                      value={multiUrlInput}
+                      onChange={(e) => setMultiUrlInput(e.target.value)}
+                      className="w-full rounded-xl border border-input bg-card p-3 text-xs text-foreground outline-none focus:ring-2 focus:ring-gold font-mono"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddMultipleUrls}
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-gold-gradient px-4 py-2 text-xs font-bold text-gold-foreground shadow-sm hover:brightness-105 transition"
+                    >
+                      <Plus className="h-3.5 w-3.5" /> Extraire et ajouter ces photos
+                    </button>
+                  </div>
+                )}
+
+                {/* MÉTHODE 3 : 1 PAR 1 */}
+                {photoMethod === "single" && (
+                  <div className="flex gap-2">
+                    <input
+                      type="url"
+                      placeholder="Coller l'URL d'une photo (https://...)"
+                      value={newImageUrl}
+                      onChange={(e) => setNewImageUrl(e.target.value)}
+                      className="h-11 flex-1 rounded-xl border border-input bg-card px-4 text-xs text-foreground outline-none focus:ring-2 focus:ring-gold"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (newImageUrl.trim()) {
+                          setFormData({
+                            ...formData,
+                            images: [...formData.images, newImageUrl.trim()],
+                          });
+                          setNewImageUrl("");
+                        }
+                      }}
+                      className="rounded-xl bg-navy px-4 text-xs font-bold text-gold hover:opacity-90 transition"
+                    >
+                      Ajouter
+                    </button>
+                  </div>
+                )}
+
+                {/* Galerie des photos ajoutées avec gestion de la couverture et ordre */}
+                {formData.images.length > 0 && (
+                  <div className="space-y-2 pt-2">
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>Cliquez sur l'étoile ★ pour définir la photo principale de couverture</span>
+                      {formData.images.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => setFormData({ ...formData, images: [] })}
+                          className="text-destructive hover:underline text-[11px]"
+                        >
+                          Tout retirer
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                      {formData.images.map((img, index) => {
+                        const isMain = index === 0;
+                        return (
+                          <div
+                            key={img + index}
+                            className={`relative aspect-[4/3] rounded-2xl overflow-hidden border-2 transition group shadow-sm bg-muted ${
+                              isMain ? "border-gold ring-2 ring-gold/20" : "border-border hover:border-gold/40"
+                            }`}
+                          >
+                            <img src={img} alt={`Photo ${index + 1}`} className="h-full w-full object-cover" />
+
+                            {/* Badge Couverture */}
+                            <div className="absolute top-1.5 left-1.5">
+                              {isMain ? (
+                                <span className="rounded-full bg-gold px-2 py-0.5 text-[9px] font-bold text-gold-foreground shadow flex items-center gap-0.5">
+                                  ★ Principale
+                                </span>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => handleSetCoverPhoto(index)}
+                                  className="rounded-full bg-navy/80 hover:bg-gold hover:text-gold-foreground text-ivory px-1.5 py-0.5 text-[9px] font-semibold backdrop-blur transition opacity-0 group-hover:opacity-100"
+                                  title="Définir comme photo de couverture"
+                                >
+                                  ★ En couverture
+                                </button>
+                              )}
+                            </div>
+
+                            {/* Boutons d'actions rapides (déplacer, supprimer) */}
+                            <div className="absolute top-1.5 right-1.5 flex items-center gap-1 opacity-90 group-hover:opacity-100">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setFormData({
+                                    ...formData,
+                                    images: formData.images.filter((_, i) => i !== index),
+                                  })
+                                }
+                                className="grid h-5 w-5 place-items-center rounded-full bg-destructive text-white shadow hover:scale-110 transition"
+                                title="Supprimer cette photo"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+
+                            {/* Flèches pour réorganiser l'ordre */}
+                            {formData.images.length > 1 && (
+                              <div className="absolute bottom-1.5 right-1.5 flex items-center gap-1 bg-black/60 backdrop-blur rounded-lg px-1 py-0.5 opacity-0 group-hover:opacity-100 transition">
+                                <button
+                                  type="button"
+                                  disabled={index === 0}
+                                  onClick={() => handleMovePhoto(index, "left")}
+                                  className="text-white hover:text-gold disabled:opacity-30 text-[10px]"
+                                  title="Déplacer vers la gauche"
+                                >
+                                  ◀
+                                </button>
+                                <span className="text-[9px] text-white font-mono">#{index + 1}</span>
+                                <button
+                                  type="button"
+                                  disabled={index === formData.images.length - 1}
+                                  onClick={() => handleMovePhoto(index, "right")}
+                                  className="text-white hover:text-gold disabled:opacity-30 text-[10px]"
+                                  title="Déplacer vers la droite"
+                                >
+                                  ▶
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Atouts & Équipements */}

@@ -95,3 +95,29 @@ CREATE POLICY "Lecture leads vendeurs"
   FOR SELECT
   TO anon, authenticated
   USING (true);
+
+-- ==============================================================================
+-- 4. BUCKET SUPABASE STORAGE POUR L'UPLOAD DES PHOTOS D'ANNONCES
+-- ==============================================================================
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('property-images', 'property-images', true)
+ON CONFLICT (id) DO UPDATE SET public = true;
+
+DROP POLICY IF EXISTS "Lecture publique des photos" ON storage.objects;
+CREATE POLICY "Lecture publique des photos"
+  ON storage.objects FOR SELECT
+  TO anon, authenticated
+  USING (bucket_id = 'property-images');
+
+DROP POLICY IF EXISTS "Upload de photos d'annonces" ON storage.objects;
+CREATE POLICY "Upload de photos d'annonces"
+  ON storage.objects FOR INSERT
+  TO anon, authenticated
+  WITH CHECK (bucket_id = 'property-images');
+
+DROP POLICY IF EXISTS "Suppression de photos d'annonces" ON storage.objects;
+CREATE POLICY "Suppression de photos d'annonces"
+  ON storage.objects FOR DELETE
+  TO anon, authenticated
+  USING (bucket_id = 'property-images');
+
