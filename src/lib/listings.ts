@@ -461,9 +461,133 @@ export const LISTINGS: Listing[] = [
     description:
       "Excellente opportunité d'investissement locatif ou de résidence principale dans un immeuble récent et très bien géré à Limete.",
   },
+  {
+    id: 13,
+    title: "Appartement contemporain sécurisé proche centre des affaires",
+    quartier: "Lingwala",
+    commune: "Lingwala",
+    address: "Avenue de la Libération (ex-24 Novembre), Lingwala",
+    type: "Appartement",
+    mode: "Acheter",
+    price: 185000,
+    beds: 3,
+    baths: 2,
+    area: 145,
+    yearBuilt: 2023,
+    img: u("photo-1545324418-cc1a3fa10c00"),
+    gallery: [
+      u("photo-1545324418-cc1a3fa10c00"),
+      u("photo-1600585154340-be6161a56a0c"),
+      u("photo-1512917774080-9991f1c4c750"),
+    ],
+    availability: "Immédiate",
+    history:
+      "Résidence moderne érigée en 2023, offrant une liaison immédiate vers Gombe et les grandes artères de la capitale.",
+    legalStatus: "Certificat d'enregistrement de copropriété en règle",
+    locationHighlights: [
+      "À 5 minutes de la Gombe et du Boulevard du 30 Juin",
+      "Proximité des institutions et grandes universités",
+      "Accès facile sans les embouteillages du centre",
+    ],
+    features: [
+      "Ascenseur et gardiennage 24h/24",
+      "Groupe électrogène et réserve d'eau",
+      "Finitions soignées et cuisine équipée",
+    ],
+    description:
+      "Logement idéal pour un pied-à-terre sécurisé à Kinshasa ou pour un investissement locatif à fort rendement à proximité directe du centre d'affaires.",
+  },
+  {
+    id: 14,
+    title: "Parcelle d'angle avec maison et fort potentiel commercial",
+    quartier: "Barumbu",
+    commune: "Barumbu",
+    address: "Avenue Kasa-Vubu, Barumbu",
+    type: "Maison",
+    mode: "Acheter",
+    price: 230000,
+    beds: 4,
+    baths: 2,
+    area: 280,
+    landArea: 550,
+    yearBuilt: 2017,
+    img: u("photo-1570129477492-45c003edd2be"),
+    gallery: [
+      u("photo-1570129477492-45c003edd2be"),
+      u("photo-1564013799919-ab600027ffc6"),
+      u("photo-1580587771525-78b9dba3b914"),
+    ],
+    availability: "Immédiate",
+    history:
+      "Propriété titrée et bornée, idéalement positionnée sur une artère passante de Barumbu.",
+    legalStatus: "Certificat d'enregistrement perpétuel vérifié",
+    locationHighlights: [
+      "Emplacement d'angle sur artère très fréquentée",
+      "Potentiel de transformation en immeuble de commerce ou appartements",
+      "Accès rapide au Marché Central et au centre-ville",
+    ],
+    features: [
+      "Clôture intégrale et portail métallique renforcé",
+      "Alimentation SNEL et Regideso stables",
+      "Cour intérieure spacieuse avec stationnement pour 5 véhicules",
+    ],
+    description:
+      "Rare opportunité foncière à Barumbu pour investisseurs avisés cherchant à développer une activité commerciale ou un projet résidentiel mixte.",
+  },
+  {
+    id: 15,
+    title: "Villa résidentielle familiale avec jardin et dépendance",
+    quartier: "Lemba",
+    commune: "Lemba",
+    address: "Quartier Righini, Lemba",
+    type: "Villa",
+    mode: "Acheter",
+    price: 245000,
+    beds: 5,
+    baths: 3,
+    area: 340,
+    landArea: 600,
+    yearBuilt: 2019,
+    img: u("photo-1600585154340-be6161a56a0c"),
+    gallery: [
+      u("photo-1600585154340-be6161a56a0c"),
+      u("photo-1613490493576-7fde63acd811"),
+      u("photo-1580587771525-78b9dba3b914"),
+    ],
+    availability: "Immédiate",
+    history:
+      "Maison soignée bâtie par son propriétaire actuel, située dans l'un des sous-quartiers les plus calmes et réputés de Lemba.",
+    legalStatus: "Certificat d'enregistrement en ordre sans contestation",
+    locationHighlights: [
+      "Secteur calme et verdoyant de Lemba Righini",
+      "Proximité des commerces de l'Échangeur et des écoles réputées",
+      "Voie pavée avec bon voisinage",
+    ],
+    features: [
+      "Jardin arboré et pelouse",
+      "Forage avec réserve d'eau 3 000L",
+      "Dépendance 2 pièces pour personnel ou bureau",
+      "Garage fermé 2 voitures",
+    ],
+    description:
+      "Une magnifique opportunité pour une famille souhaitant s'installer dans un cadre paisible et chaleureux à Lemba, avec tout le confort moderne.",
+  },
 ];
 
-export const QUARTIERS = ["Gombe", "Ngaliema", "Limete", "Mont-Ngafula", "Kintambo"] as const;
+export const COMMUNES = [
+  "Gombe",
+  "Ngaliema",
+  "Kintambo",
+  "Lingwala",
+  "Barumbu",
+  "Limete",
+  "Lemba",
+] as const;
+
+export type Commune = (typeof COMMUNES)[number];
+
+// Alias pour compatibilité
+export const QUARTIERS = COMMUNES;
 
 export const PROPERTY_TYPES = [
   "Villa",
@@ -474,14 +598,24 @@ export const PROPERTY_TYPES = [
   "Immeuble",
 ] as const;
 
-export const SALE_PRICE_FILTERS = [
+export const BUY_PRICE_FILTERS = [
   { label: "Tous les prix", min: 0, max: Infinity },
   { label: "≤ 250 000 $", min: 0, max: 250000 },
   { label: "≤ 500 000 $", min: 0, max: 500000 },
-  { label: "≤ 800 000 $", min: 0, max: 800000 },
   { label: "≤ 1 000 000 $", min: 0, max: 1000000 },
-  { label: "> 1 000 000 $", min: 1000000, max: Infinity },
+  { label: "≤ 5 000 000 $", min: 0, max: 5000000 },
 ] as const;
+
+export const RENT_PRICE_FILTERS = [
+  { label: "Tous les prix", min: 0, max: Infinity },
+  { label: "≤ 1 000 $", min: 0, max: 1000 },
+  { label: "≤ 2 500 $", min: 0, max: 2500 },
+  { label: "≤ 5 000 $", min: 0, max: 5000 },
+  { label: "≤ 10 000 $", min: 0, max: 10000 },
+] as const;
+
+// Alias pour rétro-compatibilité
+export const SALE_PRICE_FILTERS = BUY_PRICE_FILTERS;
 
 export const fmtPrice = (n: number) => n.toLocaleString("fr-FR").replace(/\u202f/g, " ");
 

@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { ListingCard } from "@/components/ListingCard";
 import { FilterSelect, SiteLayout } from "@/components/SiteLayout";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
-import { PROPERTY_TYPES, QUARTIERS, SALE_PRICE_FILTERS } from "@/lib/listings";
+import { PROPERTY_TYPES, COMMUNES, SALE_PRICE_FILTERS } from "@/lib/listings";
 import { WHATSAPP_DISPLAY } from "@/lib/whatsapp";
 import { useListings } from "@/hooks/use-listings";
 
@@ -25,7 +25,7 @@ type SortOption = "recommandes" | "prix-croissant" | "prix-decroissant" | "surfa
 
 function AcheterPage() {
   const { listings: allListings, loading, fromSupabase } = useListings();
-  const [quartier, setQuartier] = useState<string>("Tous");
+  const [commune, setCommune] = useState<string>("Tous");
   const [pricePreset, setPricePreset] = useState<string>(SALE_PRICE_FILTERS[0].label);
   const [propertyType, setPropertyType] = useState<string>("Tous");
   const [minPriceInput, setMinPriceInput] = useState<string>("");
@@ -50,14 +50,14 @@ function AcheterPage() {
     : activePreset.max;
 
   const isFiltered =
-    quartier !== "Tous" ||
+    commune !== "Tous" ||
     propertyType !== "Tous" ||
     (useCustomRange
       ? minPriceInput !== "" || maxPriceInput !== ""
       : pricePreset !== SALE_PRICE_FILTERS[0].label);
 
   const resetFilters = () => {
-    setQuartier("Tous");
+    setCommune("Tous");
     setPricePreset(SALE_PRICE_FILTERS[0].label);
     setPropertyType("Tous");
     setMinPriceInput("");
@@ -69,7 +69,11 @@ function AcheterPage() {
   const results = useMemo(() => {
     const filtered = allListings.filter((l) => {
       if (l.mode !== "Acheter") return false;
-      if (quartier !== "Tous" && l.quartier !== quartier) return false;
+      const matchCommune =
+        commune === "Tous" ||
+        l.commune?.toLowerCase() === commune.toLowerCase() ||
+        l.quartier.toLowerCase() === commune.toLowerCase();
+      if (!matchCommune) return false;
       if (propertyType !== "Tous" && l.type !== propertyType) return false;
       if (l.price < parsedMin) return false;
       if (l.price > parsedMax) return false;
@@ -84,10 +88,10 @@ function AcheterPage() {
       if (!a.featured && b.featured) return 1;
       return 0;
     });
-  }, [quartier, propertyType, parsedMin, parsedMax, sortBy]);
+  }, [allListings, commune, propertyType, parsedMin, parsedMax, sortBy]);
 
   const emptyStateMessage = useMemo(() => {
-    const qPart = quartier === "Tous" ? "à Kinshasa" : `à ${quartier}`;
+    const qPart = commune === "Tous" ? "à Kinshasa" : `à ${commune}`;
     const pPart = useCustomRange
       ? minPriceInput || maxPriceInput
         ? ` (budget entre ${minPriceInput || "0"} $ et ${maxPriceInput || "max"} $)`
@@ -98,7 +102,7 @@ function AcheterPage() {
     const tPart =
       propertyType === "Tous" ? "un bien immobilier" : `un(e) ${propertyType.toLowerCase()}`;
     return `Bonjour Kabu Palace (${WHATSAPP_DISPLAY}), je cherche à acheter ${tPart} ${qPart}${pPart}. Avez-vous des offres hors catalogue ?`;
-  }, [quartier, propertyType, pricePreset, useCustomRange, minPriceInput, maxPriceInput]);
+  }, [commune, propertyType, pricePreset, useCustomRange, minPriceInput, maxPriceInput]);
 
   return (
     <SiteLayout>
@@ -173,12 +177,12 @@ function AcheterPage() {
             onSubmit={(e) => e.preventDefault()}
             aria-label="Filtres de recherche"
           >
-            {/* Neighborhood Filter */}
+            {/* Commune Filter */}
             <FilterSelect
-              label="Quartier à Kinshasa"
-              value={quartier}
-              onChange={setQuartier}
-              options={["Tous", ...QUARTIERS]}
+              label="Commune à Kinshasa"
+              value={commune}
+              onChange={setCommune}
+              options={["Tous", ...COMMUNES]}
             />
 
             {/* Price Filter (Preset or Custom) */}
@@ -248,21 +252,21 @@ function AcheterPage() {
             </label>
           </form>
 
-          {/* Quick neighborhood tags */}
+          {/* Quick commune tags */}
           <div className="mt-4 flex flex-wrap items-center gap-2 pt-3 border-t border-border/50 text-xs">
-            <span className="text-muted-foreground font-medium">Quartiers populaires :</span>
-            {QUARTIERS.map((q) => (
+            <span className="text-muted-foreground font-medium">Communes prioritaires :</span>
+            {COMMUNES.map((c) => (
               <button
-                key={q}
+                key={c}
                 type="button"
-                onClick={() => setQuartier(quartier === q ? "Tous" : q)}
+                onClick={() => setCommune(commune === c ? "Tous" : c)}
                 className={`rounded-full px-3 py-1 font-medium transition ${
-                  quartier === q
+                  commune === c
                     ? "bg-navy text-gold"
                     : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
                 }`}
               >
-                {q}
+                {c}
               </button>
             ))}
           </div>
@@ -278,7 +282,7 @@ function AcheterPage() {
                 <>
                   {results.length} bien{results.length > 1 ? "s" : ""} disponible
                   {results.length > 1 ? "s" : ""} à l'achat
-                  {quartier !== "Tous" && <span className="text-gold font-bold"> · {quartier}</span>}
+                  {commune !== "Tous" && <span className="text-gold font-bold"> · {commune}</span>}
                   {!useCustomRange && pricePreset !== "Tous les prix" && (
                     <span className="text-muted-foreground"> ({pricePreset})</span>
                   )}

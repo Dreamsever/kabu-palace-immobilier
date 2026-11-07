@@ -27,8 +27,8 @@ describe("Acheter page (/acheter)", () => {
 
     expect(await screen.findByRole("heading", { level: 1, name: /Acheter/i })).toBeInTheDocument();
 
-    const quartierSelect = screen.getByLabelText(/Quartier à Kinshasa/i);
-    expect(quartierSelect).toBeInTheDocument();
+    const communeSelect = screen.getByLabelText(/Commune à Kinshasa/i);
+    expect(communeSelect).toBeInTheDocument();
 
     const priceSelect = screen.getByLabelText(/Budget \(Prix\)/i);
     expect(priceSelect).toBeInTheDocument();
@@ -47,8 +47,8 @@ describe("Acheter page (/acheter)", () => {
   it("filters listings when quartier is selected", async () => {
     await renderRoute("/acheter");
 
-    const quartierSelect = await screen.findByLabelText(/Quartier à Kinshasa/i);
-    fireEvent.change(quartierSelect, { target: { value: "Ngaliema" } });
+    const communeSelect = await screen.findByLabelText(/Commune à Kinshasa/i);
+    fireEvent.change(communeSelect, { target: { value: "Ngaliema" } });
 
     await waitFor(() => {
       const articles = screen.getAllByRole("article");
@@ -117,5 +117,36 @@ describe("Vendre page (/vendre)", () => {
     const submitBtn = screen.getByRole("button", { name: new RegExp(WHATSAPP_DISPLAY) });
     expect(submitBtn).toBeInTheDocument();
     expect(submitBtn).toHaveAttribute("type", "submit");
+  });
+});
+
+describe("100% Commission+ page (/commission)", () => {
+  it("renders the concept explanation and the opportunity form", async () => {
+    await renderRoute("/commission");
+
+    expect(
+      await screen.findByRole("heading", { level: 1, name: /100% COMMISSION\+/i }),
+    ).toBeInTheDocument();
+
+    expect(screen.getAllByText(/30 % de la commission/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Recommandez, gagnez, recommencez/i)).toBeInTheDocument();
+
+    // Check form fields
+    expect(screen.getByPlaceholderText(/Jean-Paul Mukendi/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /ENVOYER MON OPPORTUNITÉ/i })).toBeInTheDocument();
+  });
+});
+
+describe("Contact page (/contact)", () => {
+  it("renders all contact channels including WhatsApp, phone, email, and Facebook", async () => {
+    await renderRoute("/contact");
+
+    expect(
+      await screen.findByRole("heading", { level: 1, name: /Contactez KABU PALACE SARL/i }),
+    ).toBeInTheDocument();
+
+    expect(screen.getAllByText(new RegExp(WHATSAPP_DISPLAY)).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/kabupalaceinfo@gmail\.com/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/facebook\.com\/kabupalace/i).length).toBeGreaterThan(0);
   });
 });

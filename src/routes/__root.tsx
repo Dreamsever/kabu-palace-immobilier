@@ -79,10 +79,34 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { name: "theme-color", content: "#0F172A" },
-      { title: "Kabu Palace SARL" },
-      { name: "description", content: "Agence immobilière haut de gamme à Kinshasa." },
+      { title: "KABU PALACE SARL — Agence Immobilière de Prestige à Kinshasa" },
+      {
+        name: "description",
+        content:
+          "Agence immobilière de référence à Kinshasa (Gombe, Ngaliema, Limete, Kintambo, Lingwala, Barumbu, Lemba). Vente, location, partenariat 100% Commission+. Contact direct au 082 406 8231.",
+      },
+      {
+        name: "keywords",
+        content:
+          "agence immobilière à Kinshasa, maison à vendre à Kinshasa, appartement à louer à Gombe, terrain à vendre à Ngaliema, villa de luxe à Kinshasa, investissement immobilier en RDC, Kabu Palace",
+      },
+      { property: "og:site_name", content: "KABU PALACE SARL" },
+      { property: "og:title", content: "KABU PALACE SARL — Agence Immobilière & Marketing à Kinshasa" },
+      {
+        property: "og:description",
+        content:
+          "Maisons, villas et appartements d'exception à Kinshasa. Partenariat 100% Commission+ : gagnez 30% de commission sur vos recommandations.",
+      },
+      { property: "og:image", content: "/logo.jpg" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "KABU PALACE SARL — Immobilier à Kinshasa" },
+      {
+        name: "twitter:description",
+        content:
+          "Maisons et appartements de prestige à Kinshasa. Découvrez notre réseau 100% Commission+.",
+      },
+      { name: "twitter:image", content: "/logo.jpg" },
     ],
     links: [
       {
@@ -95,7 +119,32 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap",
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "/logo.jpg", type: "image/jpeg" },
+      { rel: "apple-touch-icon", href: "/logo.jpg" },
+    ],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "RealEstateAgent",
+          name: "KABU PALACE SARL",
+          alternateName: "Kabu Palace Immobilier",
+          url: "https://kabupalace.cd",
+          logo: "https://kabupalace.cd/logo.jpg",
+          image: "https://kabupalace.cd/logo.jpg",
+          telephone: "+243824068231",
+          email: "kabupalaceinfo@gmail.com",
+          address: {
+            "@type": "PostalAddress",
+            streetAddress: "Boulevard du 30 Juin",
+            addressLocality: "Gombe, Kinshasa",
+            addressCountry: "CD",
+          },
+          sameAs: ["https://web.facebook.com/kabupalace"],
+          priceRange: "$$",
+        }),
+      },
     ],
   }),
   shellComponent: RootShell,

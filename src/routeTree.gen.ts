@@ -10,6 +10,8 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CommissionRouteImport } from './routes/commission'
+import { Route as ContactRouteImport } from './routes/contact'
 import { Route as VendreRouteImport } from './routes/vendre'
 import { Route as AcheterIndexRouteImport } from './routes/acheter/index'
 import { Route as AcheterIdRouteImport } from './routes/acheter/$id'
@@ -17,6 +19,16 @@ import { Route as AcheterIdRouteImport } from './routes/acheter/$id'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CommissionRoute = CommissionRouteImport.update({
+  id: '/commission',
+  path: '/commission',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContactRoute = ContactRouteImport.update({
+  id: '/contact',
+  path: '/contact',
   getParentRoute: () => rootRouteImport,
 } as any)
 const VendreRoute = VendreRouteImport.update({
@@ -37,12 +49,16 @@ const AcheterIdRoute = AcheterIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/commission': typeof CommissionRoute
+  '/contact': typeof ContactRoute
   '/vendre': typeof VendreRoute
   '/acheter/$id': typeof AcheterIdRoute
   '/acheter/': typeof AcheterIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/commission': typeof CommissionRoute
+  '/contact': typeof ContactRoute
   '/vendre': typeof VendreRoute
   '/acheter/$id': typeof AcheterIdRoute
   '/acheter': typeof AcheterIndexRoute
@@ -50,20 +66,32 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/commission': typeof CommissionRoute
+  '/contact': typeof ContactRoute
   '/vendre': typeof VendreRoute
   '/acheter/$id': typeof AcheterIdRoute
   '/acheter/': typeof AcheterIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/vendre' | '/acheter/$id' | '/acheter/'
+  fullPaths:
+    '/' | '/commission' | '/contact' | '/vendre' | '/acheter/$id' | '/acheter/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/vendre' | '/acheter/$id' | '/acheter'
-  id: '__root__' | '/' | '/vendre' | '/acheter/$id' | '/acheter/'
+  to: '/' | '/commission' | '/contact' | '/vendre' | '/acheter/$id' | '/acheter'
+  id:
+    | '__root__'
+    | '/'
+    | '/commission'
+    | '/contact'
+    | '/vendre'
+    | '/acheter/$id'
+    | '/acheter/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CommissionRoute: typeof CommissionRoute
+  ContactRoute: typeof ContactRoute
   VendreRoute: typeof VendreRoute
   AcheterIdRoute: typeof AcheterIdRoute
   AcheterIndexRoute: typeof AcheterIndexRoute
@@ -76,6 +104,20 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/commission': {
+      id: '/commission'
+      path: '/commission'
+      fullPath: '/commission'
+      preLoaderRoute: typeof CommissionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contact': {
+      id: '/contact'
+      path: '/contact'
+      fullPath: '/contact'
+      preLoaderRoute: typeof ContactRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/vendre': {
@@ -104,6 +146,8 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CommissionRoute: CommissionRoute,
+  ContactRoute: ContactRoute,
   VendreRoute: VendreRoute,
   AcheterIdRoute: AcheterIdRoute,
   AcheterIndexRoute: AcheterIndexRoute,

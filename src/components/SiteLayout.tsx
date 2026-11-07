@@ -1,23 +1,24 @@
 import { Link } from "@tanstack/react-router";
-import { Crown, Facebook, Instagram, Mail, MapPin, Menu, Phone, X } from "lucide-react";
+import { Facebook, Mail, MapPin, Menu, Phone, Sparkles, X } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
-import { QUARTIERS } from "@/lib/listings";
+import { COMMUNES } from "@/lib/listings";
 import { WHATSAPP_DISPLAY, WHATSAPP_E164 } from "@/lib/whatsapp";
 
 const NAV = [
   { to: "/", label: "Accueil", hash: false },
   { to: "/acheter", label: "Acheter", hash: false },
   { to: "/vendre", label: "Vendre", hash: false },
-  { to: "/#contact", label: "Contact", hash: true },
+  { to: "/commission", label: "100% Commission+", hash: false },
+  { to: "/contact", label: "Contact", hash: false },
 ] as const;
 
 function Logo() {
   return (
     <Link to="/" className="flex items-center gap-2">
-      <span className="grid h-9 w-9 place-items-center rounded-lg bg-gold-gradient text-gold-foreground">
-        <Crown className="h-5 w-5" />
-      </span>
+      <div className="flex h-10 items-center justify-center rounded-lg bg-white p-1 shadow-sm">
+        <img src="/logo.jpg" alt="Kabu Palace" className="h-7 w-auto object-contain" />
+      </div>
       <span className="leading-none">
         <span className="block font-display text-xl font-bold text-ivory">Kabu Palace</span>
         <span className="block text-[10px] tracking-[0.25em] text-gold">SARL · KINSHASA</span>
@@ -111,17 +112,32 @@ export function SiteLayout({
           <div>
             <h4 className="mb-3 text-sm font-bold uppercase tracking-wider text-gold">Services</h4>
             <ul className="space-y-2 text-sm">
-              <li>Vente de biens</li>
-              <li>Location & gestion</li>
-              <li>Conseil en investissement</li>
-              <li>Expertise foncière</li>
+              <li>
+                <Link to="/acheter" className="hover:text-gold transition">
+                  Vente de biens
+                </Link>
+              </li>
+              <li>
+                <Link to="/acheter" className="hover:text-gold transition">
+                  Location & gestion
+                </Link>
+              </li>
+              <li>
+                <Link to="/commission" className="text-gold font-medium hover:underline transition">
+                  100% Commission+
+                </Link>
+              </li>
             </ul>
           </div>
           <div>
-            <h4 className="mb-3 text-sm font-bold uppercase tracking-wider text-gold">Quartiers</h4>
+            <h4 className="mb-3 text-sm font-bold uppercase tracking-wider text-gold">Communes</h4>
             <ul className="space-y-2 text-sm">
-              {QUARTIERS.map((q) => (
-                <li key={q}>{q}</li>
+              {COMMUNES.map((c) => (
+                <li key={c}>
+                  <Link to="/acheter" className="hover:text-gold transition">
+                    {c}
+                  </Link>
+                </li>
               ))}
             </ul>
           </div>
@@ -133,32 +149,27 @@ export function SiteLayout({
                 Boulevard du 30 Juin, Gombe, Kinshasa
               </li>
               <li>
-                <a href={`tel:+${WHATSAPP_E164}`} className="flex gap-2">
+                <a href={`tel:+${WHATSAPP_E164}`} className="flex gap-2 hover:text-gold transition">
                   <Phone className="h-4 w-4 text-gold" />
                   {WHATSAPP_DISPLAY}
                 </a>
               </li>
               <li>
-                <a href="mailto:contact@kabupalace.cd" className="flex gap-2">
+                <a href="mailto:kabupalaceinfo@gmail.com" className="flex gap-2 hover:text-gold transition">
                   <Mail className="h-4 w-4 text-gold" />
-                  contact@kabupalace.cd
+                  kabupalaceinfo@gmail.com
                 </a>
               </li>
             </ul>
             <div className="mt-4 flex gap-3">
               <a
-                href="#"
-                aria-label="Facebook"
-                className="grid h-10 w-10 place-items-center rounded-full border border-gold/40 text-gold"
+                href="https://web.facebook.com/kabupalace"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Facebook Kabu Palace"
+                className="grid h-10 w-10 place-items-center rounded-full border border-gold/40 text-gold transition hover:bg-gold hover:text-gold-foreground"
               >
                 <Facebook className="h-4 w-4" />
-              </a>
-              <a
-                href="#"
-                aria-label="Instagram"
-                className="grid h-10 w-10 place-items-center rounded-full border border-gold/40 text-gold"
-              >
-                <Instagram className="h-4 w-4" />
               </a>
             </div>
           </div>
