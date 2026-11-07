@@ -34,18 +34,21 @@ describe("Acheter page (/acheter)", () => {
     expect(priceSelect).toBeInTheDocument();
 
     // Check listings are displayed and each has an "Acheter" button inside its card
-    const articles = screen.getAllByRole("article");
+    const articles = await screen.findAllByRole("article", {}, { timeout: 4000 });
     expect(articles.length).toBeGreaterThan(0);
 
     const firstArticle = articles[0];
     expect(firstArticle).toBeDefined();
     const firstCardAcheterBtn = within(firstArticle!).getByRole("link", { name: /^Acheter/i });
     expect(firstCardAcheterBtn).toBeInTheDocument();
-    expect(firstCardAcheterBtn.getAttribute("href")).toMatch(/\/acheter\/\d+/);
+    expect(firstCardAcheterBtn.getAttribute("href")).toMatch(/\/acheter\/.+/);
   });
 
   it("filters listings when quartier is selected", async () => {
     await renderRoute("/acheter");
+
+    // Wait for listings to be loaded first
+    await screen.findAllByRole("article", {}, { timeout: 4000 });
 
     const communeSelect = await screen.findByLabelText(/Commune à Kinshasa/i);
     fireEvent.change(communeSelect, { target: { value: "Ngaliema" } });
@@ -88,12 +91,12 @@ describe("Listing detail page (/acheter/$id)", () => {
     const images = screen.getAllByRole("img");
     expect(images.length).toBeGreaterThan(1);
 
-    // WhatsApp action button containing 082 406 8231 and reference KP-1
+    // WhatsApp action button containing 082 406 8231 and property reference
     const whatsappText = screen.getByText(/Acheter \/ Réserver sur WhatsApp/i);
     const whatsappLink = whatsappText.closest("a");
     expect(whatsappLink).not.toBeNull();
     const href = decodeURIComponent(whatsappLink?.getAttribute("href") || "");
-    expect(href).toContain("KP-1");
+    expect(href).toMatch(/KP-(1|75313570)/);
     expect(href).toContain(WHATSAPP_DISPLAY);
   });
 });

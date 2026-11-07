@@ -1,13 +1,13 @@
 /**
  * use-listings.ts
  *
- * Hook React sécurisé pour charger les annonces depuis Supabase
- * avec fallback immédiat sur les annonces statiques LISTINGS.
+ * Hook React pour charger les annonces exclusivement depuis la base de données Supabase.
+ * Aucune annonce fictive ou hors base de données n'est affichée.
  */
 
 import { useEffect, useState } from 'react';
 import { fetchProperties } from '@/lib/supabase-properties';
-import { LISTINGS, type Listing } from '@/lib/listings';
+import type { Listing } from '@/lib/listings';
 
 export type UseListingsResult = {
   listings: Listing[];
@@ -16,17 +16,22 @@ export type UseListingsResult = {
   fromSupabase: boolean;
 };
 
+// Cache en mémoire pour éviter les re-fetchs inutiles entre pages
+let cachedListings: Listing[] | null = null;
+
 export function useListings(): UseListingsResult {
-  const [listings, setListings] = useState<Listing[]>(LISTINGS);
-  const [loading, setLoading] = useState(false);
+  const [listings, setListings] = useState<Listing[]>(cachedListings ?? []);
+  const [loading, setLoading] = useState<boolean>(!cachedListings);
   const [error, setError] = useState<string | null>(null);
-  const [fromSupabase, setFromSupabase] = useState(false);
+  const [fromSupabase, setFromSupabase] = useState<boolean>(!!cachedListings);
 
   useEffect(() => {
     let cancelled = false;
 
     async function load() {
-      setLoading(true);
+      if (!cachedListings) {
+        setLoading(true);
+      }
       setError(null);
 
       try {
@@ -35,23 +40,24 @@ export function useListings(): UseListingsResult {
         if (cancelled) return;
 
         if (fetchError) {
-          // Erreur réseau ou Supabase : conserver les données statiques
-          setListings(LISTINGS);
-          setFromSupabase(false);
           setError(fetchError);
-        } else if (data.length === 0) {
-          // Table vide ou non configurée : conserver les données statiques
-          setListings(LISTINGS);
-          setFromSupabase(false);
+          // Si nous n'avions pas de cache, la liste reste vide (aucune annonce hors base de données)
+          if (!cachedListings) {
+            setListings([]);
+            setFromSupabase(false);
+          }
         } else {
+          cachedListings = data;
           setListings(data);
           setFromSupabase(true);
         }
       } catch (err) {
         if (!cancelled) {
-          setListings(LISTINGS);
-          setFromSupabase(false);
           setError(String(err));
+          if (!cachedListings) {
+            setListings([]);
+            setFromSupabase(false);
+          }
         }
       } finally {
         if (!cancelled) {

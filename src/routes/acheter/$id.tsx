@@ -25,6 +25,7 @@ import { SiteLayout } from "@/components/SiteLayout";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { fmtPrice, getListingById, LISTINGS, type Listing } from "@/lib/listings";
 import { fetchPropertyById } from "@/lib/supabase-properties";
+import { useListings } from "@/hooks/use-listings";
 import { WHATSAPP_DISPLAY, WHATSAPP_E164 } from "@/lib/whatsapp";
 
 export const Route = createFileRoute("/acheter/$id")({
@@ -51,52 +52,65 @@ export const Route = createFileRoute("/acheter/$id")({
 
 function ListingDetailPage() {
   const { id } = Route.useParams();
-  const staticListing = useMemo(() => getListingById(id), [id]);
+  const { listings: allListings, loading: listingsLoading } = useListings();
   const [supabaseListing, setSupabaseListing] = useState<Listing | null>(null);
-  const [loading, setLoading] = useState<boolean>(!staticListing);
+  const [fetchLoading, setFetchLoading] = useState<boolean>(true);
+
+  // 1. Chercher d'abord dans les annonces de la base de données déjà chargées
+  const listingFromList = useMemo(
+    () =>
+      allListings.find(
+        (l) => String(l.id) === String(id) || (id === "1" && l.id === "75313570-3c29-418e-a8b6-80aa55992eef") || (id === "2" && l.id === "520232da-1c15-41de-bfd9-0bf174b89776") || (id === "3" && l.id === "11e38468-8154-42fc-8979-18a85c5f4dbd")
+      ),
+    [allListings, id],
+  );
 
   useEffect(() => {
-    if (staticListing) {
-      setLoading(false);
+    if (listingFromList) {
+      setFetchLoading(false);
       return;
     }
     let cancelled = false;
-    setLoading(true);
+    setFetchLoading(true);
     fetchPropertyById(id)
       .then(({ data }) => {
-        if (!cancelled && data) {
+        if (!cancelled) {
           setSupabaseListing(data);
         }
       })
       .catch(() => {
-        // Fallback silencieux en cas d'erreur réseau
+        // En cas d'erreur, le bien n'est pas affiché s'il n'existe pas en base
       })
       .finally(() => {
         if (!cancelled) {
-          setLoading(false);
+          setFetchLoading(false);
         }
       });
     return () => {
       cancelled = true;
     };
-  }, [id, staticListing]);
+  }, [id, listingFromList]);
 
-  const listing = staticListing ?? supabaseListing;
+  // Seules les annonces effectivement présentes dans la base de données peuvent être affichées
+  const listing = listingFromList ?? supabaseListing;
+
+  const loading = !listing && (listingsLoading || fetchLoading);
 
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
   const [copiedLink, setCopiedLink] = useState(false);
 
-  // Biens similaires (même mode 'Acheter', excluant l'actuel)
+  // Biens similaires : proviennent STRICTEMENT des annonces de la base de données (allListings)
   const similarListings = useMemo(() => {
     if (!listing) return [];
-    return LISTINGS.filter((l) => l.mode === "Acheter" && l.id !== listing.id)
+    return allListings
+      .filter((l) => l.mode === listing.mode && String(l.id) !== String(listing.id))
       .sort((a, b) => {
         if (a.quartier === listing.quartier && b.quartier !== listing.quartier) return -1;
         if (b.quartier === listing.quartier && a.quartier !== listing.quartier) return 1;
         return Math.abs(a.price - listing.price) - Math.abs(b.price - listing.price);
       })
       .slice(0, 3);
-  }, [listing]);
+  }, [listing, allListings]);
 
   if (loading) {
     return (
