@@ -608,10 +608,10 @@ export const BUY_PRICE_FILTERS = [
 
 export const RENT_PRICE_FILTERS = [
   { label: "Tous les prix", min: 0, max: Infinity },
-  { label: "≤ 1 000 $", min: 0, max: 1000 },
-  { label: "≤ 2 500 $", min: 0, max: 2500 },
-  { label: "≤ 5 000 $", min: 0, max: 5000 },
+  { label: "≤ 1 500 $", min: 0, max: 1500 },
   { label: "≤ 10 000 $", min: 0, max: 10000 },
+  { label: "≤ 50 000 $", min: 0, max: 50000 },
+  { label: "≤ 200 000 $", min: 0, max: 200000 },
 ] as const;
 
 // Alias pour rétro-compatibilité

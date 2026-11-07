@@ -53,15 +53,29 @@ function ListingDetailPage() {
   const { id } = Route.useParams();
   const staticListing = useMemo(() => getListingById(id), [id]);
   const [supabaseListing, setSupabaseListing] = useState<Listing | null>(null);
+  const [loading, setLoading] = useState<boolean>(!staticListing);
 
   useEffect(() => {
-    if (staticListing) return;
+    if (staticListing) {
+      setLoading(false);
+      return;
+    }
     let cancelled = false;
-    fetchPropertyById(id).then(({ data }) => {
-      if (!cancelled && data) {
-        setSupabaseListing(data);
-      }
-    });
+    setLoading(true);
+    fetchPropertyById(id)
+      .then(({ data }) => {
+        if (!cancelled && data) {
+          setSupabaseListing(data);
+        }
+      })
+      .catch(() => {
+        // Fallback silencieux en cas d'erreur réseau
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      });
     return () => {
       cancelled = true;
     };
@@ -83,6 +97,41 @@ function ListingDetailPage() {
       })
       .slice(0, 3);
   }, [listing]);
+
+  if (loading) {
+    return (
+      <SiteLayout>
+        <div className="mx-auto max-w-6xl px-4 py-12 md:py-16">
+          <div className="mx-auto max-w-2xl text-center mb-10">
+            <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-gold/10 text-gold mb-4 animate-pulse">
+              <Sparkles className="h-8 w-8 animate-spin" style={{ animationDuration: "3s" }} />
+            </div>
+            <h1 className="font-display text-2xl font-bold text-foreground md:text-3xl">
+              Chargement de l'annonce en cours…
+            </h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Veuillez patienter pendant la récupération des détails de ce bien d'exception.
+            </p>
+          </div>
+
+          {/* Skeleton de chargement élégant */}
+          <div className="animate-pulse space-y-6">
+            <div className="h-5 w-40 rounded-full bg-muted" />
+            <div className="h-10 w-3/4 rounded-xl bg-muted" />
+            <div className="h-5 w-1/3 rounded-full bg-muted" />
+            <div className="aspect-[16/9] w-full rounded-2xl bg-muted" />
+            <div className="grid gap-6 md:grid-cols-3">
+              <div className="md:col-span-2 space-y-4">
+                <div className="h-6 w-1/2 rounded bg-muted" />
+                <div className="h-28 w-full rounded-xl bg-muted" />
+              </div>
+              <div className="h-52 rounded-2xl bg-muted" />
+            </div>
+          </div>
+        </div>
+      </SiteLayout>
+    );
+  }
 
   if (!listing) {
     return (
