@@ -429,6 +429,16 @@ export default function AdminPage() {
       return;
     }
 
+    const minPrice = formData.categorie === "Louer" ? 50 : 1000;
+    if (!formData.prix || formData.prix < minPrice) {
+      alert(
+        formData.categorie === "Louer"
+          ? `Le loyer mensuel minimum accepté est de ${minPrice} $ USD / mois (vous avez saisi : ${formData.prix || 0} $).`
+          : `Le prix d'acquisition minimum accepté est de ${minPrice.toLocaleString("fr-FR")} $ USD (vous avez saisi : ${formData.prix || 0} $).`
+      );
+      return;
+    }
+
     setSubmitting(true);
     try {
       if (editingId) {
@@ -961,10 +971,23 @@ export default function AdminPage() {
                   </label>
                   <select
                     value={formData.categorie}
-                    onChange={(e) =>
-                      setFormData({ ...formData, categorie: e.target.value as "Acheter" | "Louer" })
-                    }
-                    className="h-12 w-full rounded-xl border border-input bg-card px-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-gold"
+                    onChange={(e) => {
+                      const newCat = e.target.value as "Acheter" | "Louer";
+                      setFormData((prev) => {
+                        let newPrice = prev.prix;
+                        if (newCat === "Louer" && prev.prix > 50000) {
+                          newPrice = 3500;
+                        } else if (newCat === "Acheter" && prev.prix < 10000) {
+                          newPrice = 250000;
+                        }
+                        return {
+                          ...prev,
+                          categorie: newCat,
+                          prix: newPrice,
+                        };
+                      });
+                    }}
+                    className="h-12 w-full rounded-xl border border-input bg-card px-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-gold font-semibold"
                   >
                     <option value="Acheter">Acheter (Vente)</option>
                     <option value="Louer">Louer (Location)</option>
@@ -1025,18 +1048,53 @@ export default function AdminPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">
-                    Prix ($ USD) *
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    step={1000}
-                    required
-                    value={formData.prix}
-                    onChange={(e) => setFormData({ ...formData, prix: Number(e.target.value) })}
-                    className="h-12 w-full rounded-xl border border-input bg-card px-4 text-sm text-foreground outline-none focus:ring-2 focus:ring-gold font-bold text-gold"
-                  />
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                      {formData.categorie === "Louer" ? "Loyer mensuel ($ USD / mois) *" : "Prix d'acquisition ($ USD) *"}
+                    </label>
+                    <span className="text-[10px] font-bold text-gold px-1.5 py-0.5 rounded bg-gold/10">
+                      Min : {formData.categorie === "Louer" ? "50 $" : "1 000 $"}
+                    </span>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min={formData.categorie === "Louer" ? 50 : 1000}
+                      step="any"
+                      required
+                      placeholder={formData.categorie === "Louer" ? "Ex: 1500, 2200, 5500..." : "Ex: 180000, 250000..."}
+                      value={formData.prix === 0 ? "" : formData.prix}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setFormData({ ...formData, prix: val === "" ? 0 : Number(val) });
+                      }}
+                      className="h-12 w-full rounded-xl border border-input bg-card px-4 pr-12 text-sm text-foreground outline-none focus:ring-2 focus:ring-gold font-bold text-gold"
+                    />
+                    <span className="absolute right-4 top-3.5 text-xs font-bold text-muted-foreground">
+                      {formData.categorie === "Louer" ? "$/m" : "$"}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    {formData.categorie === "Louer"
+                      ? "Tous les montants à partir de 50 $ sont acceptés (ex : 5 500 $, 2 200 $, etc.)."
+                      : "Tous les montants à partir de 1 000 $ sont acceptés (ex : 180 000 $, 250 000 $, etc.)."}
+                  </p>
+                  <div className="mt-1.5 flex flex-wrap gap-1 items-center">
+                    <span className="text-[10px] text-muted-foreground font-medium">Suggestions :</span>
+                    {(formData.categorie === "Louer"
+                      ? [1500, 2200, 3500, 4500, 5500, 8000]
+                      : [180000, 250000, 390000, 520000, 850000]
+                    ).map((montant) => (
+                      <button
+                        key={montant}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, prix: montant })}
+                        className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground hover:bg-gold/20 hover:text-gold transition"
+                      >
+                        {montant.toLocaleString("fr-FR")} $
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
