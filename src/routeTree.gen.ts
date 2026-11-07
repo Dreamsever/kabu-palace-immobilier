@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as CommissionRouteImport } from './routes/commission'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as VendreRouteImport } from './routes/vendre'
@@ -19,6 +20,11 @@ import { Route as AcheterIdRouteImport } from './routes/acheter/$id'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CommissionRoute = CommissionRouteImport.update({
@@ -49,6 +55,7 @@ const AcheterIdRoute = AcheterIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/commission': typeof CommissionRoute
   '/contact': typeof ContactRoute
   '/vendre': typeof VendreRoute
@@ -57,6 +64,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/commission': typeof CommissionRoute
   '/contact': typeof ContactRoute
   '/vendre': typeof VendreRoute
@@ -66,6 +74,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/commission': typeof CommissionRoute
   '/contact': typeof ContactRoute
   '/vendre': typeof VendreRoute
@@ -75,12 +84,26 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/commission' | '/contact' | '/vendre' | '/acheter/$id' | '/acheter/'
+    | '/'
+    | '/admin'
+    | '/commission'
+    | '/contact'
+    | '/vendre'
+    | '/acheter/$id'
+    | '/acheter/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/commission' | '/contact' | '/vendre' | '/acheter/$id' | '/acheter'
+  to:
+    | '/'
+    | '/admin'
+    | '/commission'
+    | '/contact'
+    | '/vendre'
+    | '/acheter/$id'
+    | '/acheter'
   id:
     | '__root__'
     | '/'
+    | '/admin'
     | '/commission'
     | '/contact'
     | '/vendre'
@@ -90,6 +113,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRoute
   CommissionRoute: typeof CommissionRoute
   ContactRoute: typeof ContactRoute
   VendreRoute: typeof VendreRoute
@@ -104,6 +128,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/commission': {
@@ -146,6 +177,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRoute,
   CommissionRoute: CommissionRoute,
   ContactRoute: ContactRoute,
   VendreRoute: VendreRoute,

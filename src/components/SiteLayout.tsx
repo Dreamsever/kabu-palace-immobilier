@@ -174,8 +174,11 @@ export function SiteLayout({
             </div>
           </div>
         </div>
-        <div className="border-t border-ivory/10 px-4 py-5 text-center text-xs text-ivory/50">
-          © {new Date().getFullYear()} Kabu Palace SARL · RCCM Kinshasa · Tous droits réservés
+        <div className="border-t border-ivory/10 px-4 py-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-ivory/50">
+          <span>© {new Date().getFullYear()} Kabu Palace SARL · RCCM Kinshasa · Tous droits réservés</span>
+          <Link to="/admin" className="hover:text-gold transition font-medium">
+            Administration
+          </Link>
         </div>
       </footer>
 

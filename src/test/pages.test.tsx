@@ -153,3 +153,17 @@ describe("Contact page (/contact)", () => {
     expect(screen.getAllByText(/facebook\.com\/kabupalace/i).length).toBeGreaterThan(0);
   });
 });
+
+describe("Admin page (/admin)", () => {
+  it("renders the admin login portal with email and password inputs", async () => {
+    await renderRoute("/admin");
+
+    expect(
+      await screen.findByRole("heading", { level: 1, name: /KABU PALACE SARL/i }),
+    ).toBeInTheDocument();
+
+    expect(screen.getByText(/Portail d'Administration/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/admin@kabupalace\.cd/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Accéder au tableau de bord/i })).toBeInTheDocument();
+  });
+});
