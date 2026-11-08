@@ -21,6 +21,7 @@ export interface PropertyFormData {
   disponibilite: string;
   status: string;
   images: string[];
+  videos?: string[];
   atouts: string[];
   points_forts: string[];
   liste: boolean;
@@ -100,7 +101,10 @@ export async function createProperty(payload: PropertyFormData) {
     statut_juridique: payload.statut_juridique,
     disponibilite: payload.disponibilite || 'Disponible',
     status: payload.status || 'disponible',
-    images: JSON.stringify(payload.images.filter(Boolean)),
+    images: JSON.stringify([
+      ...(payload.images || []).filter(Boolean),
+      ...(payload.videos || []).filter(Boolean).map((v) => (v.startsWith('video:') ? v : `video:${v}`)),
+    ]),
     atouts: payload.atouts.filter(Boolean),
     points_forts: payload.points_forts.filter(Boolean),
     liste: payload.liste ?? true,
@@ -140,7 +144,11 @@ export async function updateProperty(id: string, payload: Partial<PropertyFormDa
   if (payload.statut_juridique !== undefined) row.statut_juridique = payload.statut_juridique;
   if (payload.disponibilite !== undefined) row.disponibilite = payload.disponibilite;
   if (payload.status !== undefined) row.status = payload.status;
-  if (payload.images !== undefined) row.images = JSON.stringify(payload.images.filter(Boolean));
+  if (payload.images !== undefined || payload.videos !== undefined) {
+    const imgs = (payload.images || []).filter(Boolean);
+    const vids = (payload.videos || []).filter(Boolean).map((v) => (v.startsWith('video:') ? v : `video:${v}`));
+    row.images = JSON.stringify([...imgs, ...vids]);
+  }
   if (payload.atouts !== undefined) row.atouts = payload.atouts.filter(Boolean);
   if (payload.points_forts !== undefined) row.points_forts = payload.points_forts.filter(Boolean);
   if (payload.liste !== undefined) row.liste = payload.liste;
@@ -204,6 +212,40 @@ export async function uploadPropertyImage(file: File): Promise<string> {
   }
 
   // Fallback si le bucket Storage n'a pas encore été créé dans Supabase
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = (e) => reject(e);
+    reader.readAsDataURL(file);
+  });
+}
+
+export async function uploadPropertyVideo(file: File): Promise<string> {
+  if (!supabase) throw new Error('Client Supabase non initialisé');
+
+  const fileExt = file.name.split('.').pop() || 'mp4';
+  const cleanExt = fileExt.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${cleanExt || 'mp4'}`;
+  const filePath = `videos/${fileName}`;
+
+  try {
+    const { data, error } = await supabase.storage
+      .from('property-images')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false,
+      });
+
+    if (!error && data) {
+      const { data: urlData } = supabase.storage
+        .from('property-images')
+        .getPublicUrl(data.path);
+      return urlData.publicUrl;
+    }
+  } catch (err) {
+    console.warn('[Storage] Video upload failed, falling back to data URL:', err);
+  }
+
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result as string);

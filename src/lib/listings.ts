@@ -21,6 +21,8 @@ export type Listing = {
   description: string;
   locationHighlights: string[];
   featured?: boolean;
+  video?: string;
+  videos?: string[];
 };
 
 const u = (id: string) => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=1200&q=75`;
@@ -94,7 +96,7 @@ export const LISTINGS: Listing[] = [
     availability: "Disponible au 1er du mois prochain",
     history:
       "Appartement situé au dernier étage d'une tour résidentielle récente livrée en 2023. Prestations haut de gamme gérées par un syndic professionnel international.",
-    legalStatus: "Titre de copropriété certifié en règle",
+    legalStatus: "Location autorisée - Le bailleur dispose du droit de mettre le bien en location",
     locationHighlights: [
       "Vue imprenable et imprenable sur le fleuve Congo et Brazzaville",
       "Accès direct aux restaurants gastronomiques et hôtels de prestige",
@@ -167,7 +169,7 @@ export const LISTINGS: Listing[] = [
     gallery: [u("photo-1600210492486-724fe5c67fb0"), u("photo-1522708323590-d24dbb6b0267")],
     availability: "Immédiate",
     history: "Rénovation intégrale avec mobilier italien haut de gamme fin 2023.",
-    legalStatus: "Bail notarié disponible sous 24h",
+    legalStatus: "Location autorisée - Le bailleur dispose du droit de mettre le bien en location",
     locationHighlights: [
       "Côté résidentiel calme de Limete",
       "Accès rapide à l'Aéroport International de N'djili et au centre-ville",
@@ -193,7 +195,7 @@ export const LISTINGS: Listing[] = [
     gallery: [u("photo-1497366216548-37526070297c"), u("photo-1497215728101-856f4ea42174")],
     availability: "Disponible sous 15 jours",
     history: "Ancien siège d'un groupe minier international.",
-    legalStatus: "Contrat de bail commercial standard OHADA",
+    legalStatus: "Location autorisée - Le bailleur dispose du droit de mettre le bien en location",
     locationHighlights: [
       "Emplacement prestigieux sur le Boulevard du 30 Juin",
       "Proche des banques centrales, ministères et grands hôtels",
@@ -595,6 +597,7 @@ export const PROPERTY_TYPES = [
   "Bureau",
   "Terrain",
   "Maison",
+  "Maison commerciale",
   "Immeuble",
 ] as const;
 
@@ -609,9 +612,11 @@ export const BUY_PRICE_FILTERS = [
 export const RENT_PRICE_FILTERS = [
   { label: "Tous les prix", min: 0, max: Infinity },
   { label: "≤ 1 500 $", min: 0, max: 1500 },
+  { label: "≤ 5 000 $", min: 0, max: 5000 },
   { label: "≤ 10 000 $", min: 0, max: 10000 },
+  { label: "≤ 20 000 $", min: 0, max: 20000 },
+  { label: "≤ 30 000 $", min: 0, max: 30000 },
   { label: "≤ 50 000 $", min: 0, max: 50000 },
-  { label: "≤ 200 000 $", min: 0, max: 200000 },
 ] as const;
 
 // Alias pour rétro-compatibilité

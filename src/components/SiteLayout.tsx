@@ -21,7 +21,7 @@ function Logo() {
       </div>
       <span className="leading-none">
         <span className="block font-display text-xl font-bold text-ivory">Kabu Palace</span>
-        <span className="block text-[10px] tracking-[0.25em] text-gold">SARL · KINSHASA</span>
+        <span className="block text-[10px] tracking-[0.25em] text-gold">Immo · KINSHASA</span>
       </span>
     </Link>
   );
@@ -106,7 +106,7 @@ export function SiteLayout({
           <div>
             <Logo />
             <p className="mt-4 text-sm">
-              Votre partenaire de confiance pour l'immobilier haut de gamme en RDC.
+              Votre carrefour immobilier de confiance en RDC
             </p>
           </div>
           <div>
@@ -125,6 +125,11 @@ export function SiteLayout({
               <li>
                 <Link to="/commission" className="text-gold font-medium hover:underline transition">
                   100% Commission+
+                </Link>
+              </li>
+              <li>
+                <Link to="/#conseils" className="hover:text-gold transition">
+                  Conseils Immobiliers
                 </Link>
               </li>
             </ul>

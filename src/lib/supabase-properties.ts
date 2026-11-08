@@ -79,9 +79,48 @@ function parseArray(raw: string[] | string | null | undefined): string[] {
   return [];
 }
 
+export function isVideoUrl(url: string | null | undefined): boolean {
+  if (!url) return false;
+  const clean = url.trim();
+  if (clean.startsWith('video:')) return true;
+  return (
+    /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be|vimeo\.com|player\.vimeo\.com)\//i.test(clean) ||
+    /\.(mp4|webm|mov|ogg)(\?.*)?$/i.test(clean)
+  );
+}
+
+export function cleanVideoUrl(url: string): string {
+  return url.replace(/^video:/, '').trim();
+}
+
+export function getVideoEmbedUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  const clean = cleanVideoUrl(url);
+
+  // YouTube watch, share, shorts
+  const ytMatch = clean.match(
+    /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i
+  );
+  if (ytMatch && ytMatch[1]) {
+    return `https://www.youtube.com/embed/${ytMatch[1]}`;
+  }
+
+  // Vimeo
+  const vimeoMatch = clean.match(
+    /vimeo\.com\/(?:channels\/(?:\w+\/)?|groups\/([^\/]*)\/videos\/|album\/(\d+)\/video\/|video\/|)(\d+)/i
+  );
+  if (vimeoMatch && vimeoMatch[3]) {
+    return `https://player.vimeo.com/video/${vimeoMatch[3]}`;
+  }
+
+  return null;
+}
+
 export function mapPropertyToListing(p: SupabaseProperty): Listing {
-  const images = parseImages(p.images);
-  const img = images[0] ?? 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=75';
+  const rawImages = parseImages(p.images);
+  const videoUrls = rawImages.filter(isVideoUrl).map(cleanVideoUrl);
+  const photoUrls = rawImages.filter((u) => !isVideoUrl(u));
+  const img = photoUrls[0] ?? 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=75';
 
   const rawMode = (p.categorie ?? '').toLowerCase();
   const mode: 'Acheter' | 'Louer' = rawMode.includes('lou') ? 'Louer' : 'Acheter';
@@ -104,6 +143,14 @@ export function mapPropertyToListing(p: SupabaseProperty): Listing {
   const isListed = p.liste ?? p.listé ?? true;
   const isFeatured = p.vedette ?? isListed;
 
+  const defaultLegalStatus =
+    mode === 'Louer'
+      ? 'Location autorisée - Le bailleur dispose du droit de mettre le bien en location'
+      : 'Certificat d\'enregistrement en cours';
+  const legalStatus = p.statut_juridique && p.statut_juridique.trim() !== ''
+    ? p.statut_juridique
+    : defaultLegalStatus;
+
   return {
     id: p.id,
     title,
@@ -119,11 +166,13 @@ export function mapPropertyToListing(p: SupabaseProperty): Listing {
     landArea: p.surface_terrain ? Number(p.surface_terrain) : undefined,
     yearBuilt: p.annee_construction ? Number(p.annee_construction) : undefined,
     img,
-    gallery: images.length > 0 ? images : [img],
+    gallery: photoUrls.length > 0 ? photoUrls : [img],
+    video: videoUrls[0],
+    videos: videoUrls,
     availability,
     description: p.description ?? '',
     history: p.description ?? '',
-    legalStatus: p.statut_juridique ?? 'Certificat d\'enregistrement en cours',
+    legalStatus,
     features: parseArray(p.atouts),
     locationHighlights: parseArray(p.points_forts),
     featured: isFeatured,

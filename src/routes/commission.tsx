@@ -234,7 +234,7 @@ export default function CommissionPage() {
             </div>
             <div className="flex items-center gap-2 rounded-xl bg-card/10 px-4 py-2 border border-ivory/15">
               <Phone className="h-5 w-5 text-gold" />
-              <span>Contact : 082 406 8231</span>
+              <span>Contact : 083 000 780</span>
             </div>
           </div>
         </div>
@@ -425,7 +425,7 @@ export default function CommissionPage() {
                 <input
                   type="tel"
                   required
-                  placeholder="Ex : 082 406 8231 ou +243 ..."
+                  placeholder="Ex : 083 000 780 ou +243 ..."
                   value={telephone}
                   onChange={(e) => setTelephone(e.target.value)}
                   className="mt-1 h-11 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-gold"
@@ -487,6 +487,7 @@ export default function CommissionPage() {
                   <option value="Terrain">Terrain / Parcelle</option>
                   <option value="Immeuble">Immeuble</option>
                   <option value="Maison">Maison</option>
+                  <option value="Maison commerciale">Maison commerciale</option>
                   <option value="Autre">Autre bien</option>
                 </select>
               </label>

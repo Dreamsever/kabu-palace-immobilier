@@ -30,6 +30,9 @@ import {
   Trash2,
   Upload,
   Users,
+  Video,
+  Film,
+  Play,
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -47,16 +50,22 @@ import {
   updateProperty,
   updatePropertyAvailability,
   uploadPropertyImage,
+  uploadPropertyVideo,
   type PropertyFormData,
   type SellerLead,
 } from "@/lib/supabase-admin";
-import type { SupabaseProperty } from "@/lib/supabase-properties";
+import {
+  isVideoUrl,
+  cleanVideoUrl,
+  getVideoEmbedUrl,
+  type SupabaseProperty,
+} from "@/lib/supabase-properties";
 import { WHATSAPP_DISPLAY, WHATSAPP_E164 } from "@/lib/whatsapp";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
     meta: [
-      { title: "Administration — Kabu Palace SARL" },
+      { title: "Administration — Kabu Palace Immo" },
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
@@ -85,6 +94,7 @@ const DEFAULT_FORM: PropertyFormData = {
   images: [
     "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=75",
   ],
+  videos: [],
   atouts: ["Groupe électrogène", "Forage d'eau", "Guérite de sécurité", "Climatisation"],
   points_forts: ["Accès goudronné", "Zone résidentielle calme et sécurisée"],
   liste: true,
@@ -148,6 +158,52 @@ export default function AdminPage() {
   const [customAtout, setCustomAtout] = useState("");
   const [customPointFort, setCustomPointFort] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  // Vidéos
+  const [newVideoUrl, setNewVideoUrl] = useState("");
+  const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [videoProgressText, setVideoProgressText] = useState("");
+
+  const handleAddVideoUrl = () => {
+    if (!newVideoUrl.trim()) return;
+    setFormData((prev) => ({
+      ...prev,
+      videos: [...(prev.videos || []), newVideoUrl.trim()],
+    }));
+    setNewVideoUrl("");
+  };
+
+  const handleRemoveVideo = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      videos: (prev.videos || []).filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleVideoUpload = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setUploadingVideo(true);
+    setVideoProgressText(`Téléversement de la vidéo (${files.length})…`);
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (file) {
+          const url = await uploadPropertyVideo(file);
+          if (url) {
+            setFormData((prev) => ({
+              ...prev,
+              videos: [...(prev.videos || []), url],
+            }));
+          }
+        }
+      }
+    } catch (err) {
+      alert("Erreur lors de l'upload de la vidéo : " + String(err));
+    } finally {
+      setUploadingVideo(false);
+      setVideoProgressText("");
+    }
+  };
 
   // Gestion du téléversement de fichiers
   const handleFileUpload = async (files: FileList | null) => {
@@ -381,14 +437,24 @@ export default function AdminPage() {
   const handleEditClick = (p: SupabaseProperty) => {
     setEditingId(p.id);
 
-    // Parse images
+    // Parse images et vidéos
     let imgs: string[] = [];
+    let vids: string[] = [];
     if (p.images) {
       try {
         const parsed = JSON.parse(p.images);
-        if (Array.isArray(parsed)) imgs = parsed;
+        if (Array.isArray(parsed)) {
+          imgs = parsed.filter((item: string) => !isVideoUrl(item));
+          vids = parsed.filter((item: string) => isVideoUrl(item)).map(cleanVideoUrl);
+        }
       } catch {
-        if (p.images.startsWith("http")) imgs = [p.images];
+        if (p.images.startsWith("http")) {
+          if (isVideoUrl(p.images)) {
+            vids = [cleanVideoUrl(p.images)];
+          } else {
+            imgs = [p.images];
+          }
+        }
       }
     }
 
@@ -408,10 +474,15 @@ export default function AdminPage() {
       chambres: p.chambres ? Number(p.chambres) : 0,
       salles_de_bain: p.salles_de_bain ? Number(p.salles_de_bain) : 0,
       annee_construction: p.annee_construction ? Number(p.annee_construction) : undefined,
-      statut_juridique: p.statut_juridique || "Certificat d'enregistrement",
+      statut_juridique:
+        p.statut_juridique ||
+        (p.categorie === "Louer"
+          ? "Location autorisée - Le bailleur dispose du droit de mettre le bien en location"
+          : "Certificat d'enregistrement en ordre"),
       disponibilite: p.disponibilite || "Disponible",
       status: p.status || "disponible",
       images: imgs.length > 0 ? imgs : [DEFAULT_FORM.images[0]!],
+      videos: vids,
       atouts: Array.isArray(p.atouts) ? p.atouts : [],
       points_forts: Array.isArray(p.points_forts) ? p.points_forts : [],
       liste: p.liste !== false && p.listé !== false,
@@ -507,7 +578,7 @@ export default function AdminPage() {
               <KeyRound className="h-7 w-7 text-navy" />
             </div>
             <h1 className="mt-4 font-display text-2xl font-bold text-navy">
-              KABU PALACE SARL
+              KABU PALACE Immo
             </h1>
             <p className="text-xs uppercase tracking-[0.25em] text-gold font-bold mt-1">
               Portail d'Administration
@@ -976,7 +1047,7 @@ export default function AdminPage() {
                       setFormData((prev) => {
                         let newPrice = prev.prix;
                         if (newCat === "Louer" && prev.prix > 50000) {
-                          newPrice = 3500;
+                          newPrice = 1500;
                         } else if (newCat === "Acheter" && prev.prix < 10000) {
                           newPrice = 250000;
                         }
@@ -984,6 +1055,12 @@ export default function AdminPage() {
                           ...prev,
                           categorie: newCat,
                           prix: newPrice,
+                          statut_juridique:
+                            newCat === "Louer"
+                              ? "Location autorisée - Le bailleur dispose du droit de mettre le bien en location"
+                              : prev.statut_juridique.includes("Location autorisée")
+                                ? "Certificat d'enregistrement en ordre"
+                                : prev.statut_juridique,
                         };
                       });
                     }}
@@ -1082,7 +1159,7 @@ export default function AdminPage() {
                   <div className="mt-1.5 flex flex-wrap gap-1 items-center">
                     <span className="text-[10px] text-muted-foreground font-medium">Suggestions :</span>
                     {(formData.categorie === "Louer"
-                      ? [1500, 2200, 3500, 4500, 5500, 8000]
+                      ? [1500, 5000, 10000, 20000, 30000, 50000]
                       : [180000, 250000, 390000, 520000, 850000]
                     ).map((montant) => (
                       <button
@@ -1183,15 +1260,34 @@ export default function AdminPage() {
               <div className="grid gap-4 sm:grid-cols-2 pt-4 border-t border-border/80">
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">
-                    Statut Juridique (Titre Foncier)
+                    {formData.categorie === "Louer" ? "Situation Juridique (Location)" : "Statut Juridique (Titre Foncier)"}
                   </label>
                   <input
                     type="text"
-                    placeholder="Ex: Certificat d'enregistrement définitif sans hypothèque"
+                    placeholder={
+                      formData.categorie === "Louer"
+                        ? "Location autorisée - Le bailleur dispose du droit de mettre le bien en location"
+                        : "Ex: Certificat d'enregistrement définitif sans hypothèque"
+                    }
                     value={formData.statut_juridique}
                     onChange={(e) => setFormData({ ...formData, statut_juridique: e.target.value })}
                     className="h-12 w-full rounded-xl border border-input bg-card px-4 text-sm text-foreground outline-none focus:ring-2 focus:ring-gold"
                   />
+                  {formData.categorie === "Louer" && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFormData({
+                          ...formData,
+                          statut_juridique:
+                            "Location autorisée - Le bailleur dispose du droit de mettre le bien en location",
+                        })
+                      }
+                      className="mt-1 text-[11px] text-gold hover:underline font-medium text-left block"
+                    >
+                      Utiliser : "Location autorisée - Le bailleur dispose du droit de mettre le bien en location"
+                    </button>
+                  )}
                 </div>
 
                 <div>
@@ -1434,6 +1530,122 @@ export default function AdminPage() {
                 )}
               </div>
 
+              {/* Vidéos de l'annonce - Visite Virtuelle / Vidéo de présentation */}
+              <div className="pt-5 border-t border-border/80 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-navy">
+                      <Video className="h-4 w-4 text-gold" />
+                      Vidéos du bien ({(formData.videos || []).length} vidéo{(formData.videos || []).length > 1 ? "s" : ""})
+                    </label>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      Idéal pour les visites virtuelles : ajoutez un lien YouTube, Vimeo, MP4 direct ou téléversez un fichier vidéo.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Ajout de vidéo : soit par lien, soit par upload */}
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {/* Option 1: Coller un lien */}
+                  <div className="rounded-2xl border border-border bg-card p-4 space-y-2">
+                    <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                      <Link2 className="h-3.5 w-3.5 text-gold" />
+                      Lien vidéo (YouTube, Shorts, Vimeo, MP4)
+                    </span>
+                    <div className="flex gap-2">
+                      <input
+                        type="url"
+                        placeholder="https://youtu.be/... ou https://..."
+                        value={newVideoUrl}
+                        onChange={(e) => setNewVideoUrl(e.target.value)}
+                        className="h-10 flex-1 rounded-xl border border-input bg-card px-3 text-xs text-foreground outline-none focus:ring-2 focus:ring-gold"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddVideoUrl}
+                        className="rounded-xl bg-navy px-3 text-xs font-bold text-gold hover:bg-navy/90 transition shadow-sm"
+                      >
+                        Ajouter
+                      </button>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground block">
+                      Collez le lien YouTube, TikTok/Shorts, Vimeo ou un fichier MP4
+                    </span>
+                  </div>
+
+                  {/* Option 2: Upload fichier */}
+                  <div className="rounded-2xl border-2 border-dashed border-gold/40 bg-gold/5 p-4 text-center hover:bg-gold/10 transition flex flex-col justify-center">
+                    <label className="cursor-pointer flex flex-col items-center">
+                      <Upload className={`h-5 w-5 text-gold mb-1 ${uploadingVideo ? "animate-bounce" : ""}`} />
+                      <span className="text-xs font-bold text-navy">
+                        {uploadingVideo ? videoProgressText : "Téléverser un fichier vidéo direct"}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground mt-0.5">
+                        MP4, WEBM, MOV (sélectionnez depuis votre téléphone ou PC)
+                      </span>
+                      <input
+                        type="file"
+                        accept="video/mp4,video/webm,video/quicktime"
+                        disabled={uploadingVideo}
+                        onChange={(e) => handleVideoUpload(e.target.files)}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                {/* Liste des vidéos ajoutées avec preview */}
+                {(formData.videos || []).length > 0 && (
+                  <div className="space-y-2 pt-1">
+                    <span className="text-xs font-semibold text-muted-foreground">
+                      Vidéos associées à l'annonce :
+                    </span>
+                    <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
+                      {(formData.videos || []).map((videoUrl, vIndex) => {
+                        const embedUrl = getVideoEmbedUrl(videoUrl);
+                        return (
+                          <div
+                            key={videoUrl + vIndex}
+                            className="relative rounded-2xl overflow-hidden border border-border bg-slate-950 p-2 shadow-sm space-y-2"
+                          >
+                            <div className="relative aspect-video rounded-xl overflow-hidden bg-black flex items-center justify-center">
+                              {embedUrl ? (
+                                <iframe
+                                  src={embedUrl}
+                                  title={`Vidéo ${vIndex + 1}`}
+                                  className="h-full w-full border-0"
+                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                  allowFullScreen
+                                />
+                              ) : (
+                                <video
+                                  src={videoUrl}
+                                  controls
+                                  className="h-full w-full object-contain"
+                                />
+                              )}
+                            </div>
+                            <div className="flex items-center justify-between text-[11px] px-1 text-ivory">
+                              <span className="truncate max-w-[180px] font-mono text-[10px] text-ivory/70">
+                                Vidéo #{vIndex + 1}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveVideo(vIndex)}
+                                className="text-destructive hover:text-red-400 p-1 transition"
+                                title="Supprimer cette vidéo"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Atouts & Équipements */}
               <div className="pt-4 border-t border-border/80 space-y-2">
                 <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground">
@@ -1651,7 +1863,7 @@ export default function AdminPage() {
 
                     <a
                       href={`https://wa.me/${lead.telephone.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(
-                        `Bonjour ${lead.nom}, je suis l'administrateur de Kabu Palace SARL. J'ai bien reçu votre demande pour votre bien (${lead.type_bien} à ${lead.district}).`,
+                        `Bonjour ${lead.nom}, je suis l'administrateur de Kabu Palace Immo. J'ai bien reçu votre demande pour votre bien (${lead.type_bien} à ${lead.district}).`,
                       )}`}
                       target="_blank"
                       rel="noopener noreferrer"
