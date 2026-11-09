@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, Bath, BedDouble, Calendar, MapPin, Maximize } from "lucide-react";
+import { ArrowRight, Bath, BedDouble, Calendar, MapPin, Maximize, Play } from "lucide-react";
 import { fmtPrice, type Listing } from "@/lib/listings";
 
 export function ListingCard({ listing }: { listing: Listing }) {
@@ -23,6 +23,12 @@ export function ListingCard({ listing }: { listing: Listing }) {
         {listing.availability && (
           <span className="absolute right-3 top-3 rounded-full bg-card/90 backdrop-blur px-2.5 py-1 text-[11px] font-semibold text-foreground shadow-sm">
             {(listing.availability.split("—")[0] ?? listing.availability).trim()}
+          </span>
+        )}
+        {((listing.videos && listing.videos.length > 0) || listing.video) && (
+          <span className="absolute bottom-3 left-3 flex items-center gap-1.5 rounded-full bg-navy/90 backdrop-blur px-2.5 py-1 text-xs font-bold text-gold shadow-md">
+            <Play className="h-3 w-3 fill-gold text-gold" />
+            <span>Vidéo</span>
           </span>
         )}
       </Link>

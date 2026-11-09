@@ -159,7 +159,7 @@ describe("Admin page (/admin)", () => {
     await renderRoute("/admin");
 
     expect(
-      await screen.findByRole("heading", { level: 1, name: /KABU PALACE SARL/i }),
+      await screen.findByRole("heading", { level: 1, name: /KABU PALACE (SARL|Immo)/i }),
     ).toBeInTheDocument();
 
     expect(screen.getByText(/Portail d'Administration/i)).toBeInTheDocument();

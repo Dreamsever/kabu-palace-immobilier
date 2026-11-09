@@ -18,13 +18,16 @@ import {
   Share2,
   ShieldCheck,
   Sparkles,
+  Video,
+  Film,
+  Play,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { ListingCard } from "@/components/ListingCard";
 import { SiteLayout } from "@/components/SiteLayout";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { fmtPrice, getListingById, LISTINGS, type Listing } from "@/lib/listings";
-import { fetchPropertyById } from "@/lib/supabase-properties";
+import { cleanVideoUrl, fetchPropertyById, getVideoEmbedUrl } from "@/lib/supabase-properties";
 import { useListings } from "@/hooks/use-listings";
 import { WHATSAPP_DISPLAY, WHATSAPP_E164 } from "@/lib/whatsapp";
 
@@ -177,8 +180,60 @@ function ListingDetailPage() {
     );
   }
 
-  const gallery = listing.gallery?.length > 0 ? listing.gallery : [listing.img];
-  const activeImage = gallery[activePhotoIndex] || listing.img;
+  // Vidéos de l'annonce
+  const videos = useMemo(() => {
+    const list =
+      listing && listing.videos && listing.videos.length > 0
+        ? listing.videos
+        : listing?.video
+          ? [listing.video]
+          : [];
+    return list.map(cleanVideoUrl).filter(Boolean);
+  }, [listing]);
+
+  const hasVideos = videos.length > 0;
+  const [activeVideoIndex, setActiveVideoIndex] = useState(0);
+
+  // Détection des photos d'illustration insérées par défaut (placeholder Unsplash générique)
+  const isPlaceholderPhoto = (url: string) =>
+    url.includes("photo-1600585154340-be6161a56a0c");
+
+  // Vraies photos fournies par l'utilisateur (on exclut les placeholders insérés automatiquement)
+  const realPhotos = useMemo(() => {
+    if (!listing) return [];
+    const source =
+      listing.gallery && listing.gallery.length > 0
+        ? listing.gallery
+        : [listing.img];
+    return source.filter((p) => p && !isPlaceholderPhoto(p));
+  }, [listing]);
+
+  // Si l'annonce a une vidéo, on affiche par défaut le lecteur vidéo ("Ignore les images insérées")
+  const [mediaTab, setMediaTab] = useState<"video" | "photos">(hasVideos ? "video" : "photos");
+
+  useEffect(() => {
+    if (hasVideos) {
+      setMediaTab("video");
+      setActiveVideoIndex(0);
+    } else {
+      setMediaTab("photos");
+    }
+  }, [hasVideos]);
+
+  const currentVideo = videos[activeVideoIndex] || videos[0] || "";
+  const currentEmbedUrl = useMemo(
+    () => (currentVideo ? getVideoEmbedUrl(currentVideo) : null),
+    [currentVideo],
+  );
+
+  // Galerie photo affichée si pas de vidéo ou si l'utilisateur bascule sur les photos
+  const gallery = useMemo(() => {
+    if (realPhotos.length > 0) return realPhotos;
+    if (hasVideos) return []; // Ignore totalement les images insérées si une vidéo est présente
+    return listing?.gallery?.length ? listing.gallery : [listing?.img].filter(Boolean) as string[];
+  }, [realPhotos, hasVideos, listing]);
+
+  const activeImage = gallery[activePhotoIndex] || gallery[0] || listing?.img || "";
 
   const inquiryMessage = `Bonjour Kabu Palace (${WHATSAPP_DISPLAY}), je souhaite acheter ce bien : "${listing.title}" (${listing.quartier}, réf. KP-${listing.id}, au prix de ${fmtPrice(listing.price)} $). Pouvez-vous me transmettre la fiche technique complète et organiser une visite privée ?`;
 
@@ -286,46 +341,142 @@ function ListingDetailPage() {
           </div>
         </div>
 
-        {/* Galerie Photos */}
-        <section className="mb-10 space-y-3" aria-label="Galerie de photos du bien">
-          <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl bg-muted shadow-card md:aspect-[21/9]">
-            <img
-              src={activeImage}
-              alt={`${listing.title} - Photo ${activePhotoIndex + 1}`}
-              className="h-full w-full object-cover transition duration-300"
-            />
-            <div className="absolute bottom-3 right-3 rounded-full bg-navy/80 backdrop-blur px-3 py-1 text-xs font-bold text-ivory">
-              Photo {activePhotoIndex + 1} / {gallery.length}
-            </div>
-            <div className="absolute top-3 left-3 rounded-full bg-navy/90 backdrop-blur px-3 py-1.5 text-xs font-semibold text-ivory flex items-center gap-1.5">
-              <Clock className="h-3.5 w-3.5 text-gold" />
-              <span>Disponibilité : {listing.availability}</span>
-            </div>
-          </div>
+        {/* Section Médias (Lecteur Vidéo & Photos) */}
+        <section className="mb-10 space-y-3" aria-label="Médias du bien">
+          {/* En-tête Médias avec switch vidéo / photos si pertinent */}
+          {hasVideos && (
+            <div className="flex flex-wrap items-center justify-between gap-3 pb-1">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-2 rounded-full bg-navy px-3.5 py-1.5 text-xs font-bold text-gold shadow-sm">
+                  <Film className="h-4 w-4 text-gold animate-pulse" />
+                  Visite Vidéo {videos.length > 1 ? `(${activeVideoIndex + 1}/${videos.length})` : ""}
+                </span>
+                {videos.length > 1 && (
+                  <div className="flex gap-1.5">
+                    {videos.map((_, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => {
+                          setActiveVideoIndex(idx);
+                          setMediaTab("video");
+                        }}
+                        className={`h-7 px-3 rounded-full text-xs font-semibold transition ${
+                          activeVideoIndex === idx && mediaTab === "video"
+                            ? "bg-gold text-gold-foreground font-bold shadow-sm"
+                            : "bg-muted text-muted-foreground hover:bg-muted/80"
+                        }`}
+                      >
+                        Vidéo {idx + 1}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
 
-          {/* Miniatures */}
-          {gallery.length > 1 && (
-            <div className="flex gap-2 overflow-x-auto pb-2">
-              {gallery.map((photo, index) => (
-                <button
-                  key={photo + index}
-                  type="button"
-                  onClick={() => setActivePhotoIndex(index)}
-                  className={`relative aspect-[4/3] h-20 shrink-0 overflow-hidden rounded-lg border-2 transition ${
-                    activePhotoIndex === index
-                      ? "border-gold shadow-md scale-105"
-                      : "border-transparent opacity-70 hover:opacity-100"
-                  }`}
-                  aria-label={`Afficher la photo ${index + 1}`}
-                >
-                  <img
-                    src={photo}
-                    alt={`Miniature ${index + 1}`}
-                    className="h-full w-full object-cover"
-                  />
-                </button>
-              ))}
+              {/* Si de vraies photos distinctes ont été ajoutées en plus de la vidéo, permettre d'alterner */}
+              {gallery.length > 0 && (
+                <div className="flex rounded-lg border border-border bg-muted/60 p-0.5 text-xs font-semibold">
+                  <button
+                    type="button"
+                    onClick={() => setMediaTab("video")}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-md transition ${
+                      mediaTab === "video"
+                        ? "bg-navy text-gold shadow-sm font-bold"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <Play className="h-3 w-3 fill-current" /> Lecteur Vidéo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMediaTab("photos")}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-md transition ${
+                      mediaTab === "photos"
+                        ? "bg-navy text-gold shadow-sm font-bold"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    Photos ({gallery.length})
+                  </button>
+                </div>
+              )}
             </div>
+          )}
+
+          {/* Affichage du Lecteur Vidéo (Prioritaire si vidéo uploadée) */}
+          {hasVideos && mediaTab === "video" && currentVideo ? (
+            <div className="relative aspect-video max-h-[580px] w-full overflow-hidden rounded-2xl bg-black shadow-card md:aspect-[16/9] flex items-center justify-center border border-border">
+              {currentEmbedUrl ? (
+                <iframe
+                  src={currentEmbedUrl}
+                  title={`${listing.title} - Vidéo`}
+                  className="h-full w-full border-0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              ) : (
+                <video
+                  key={currentVideo}
+                  src={currentVideo}
+                  controls
+                  playsInline
+                  preload="metadata"
+                  className="h-full w-full object-contain bg-black"
+                />
+              )}
+
+              {/* Badge Disponibilité */}
+              <div className="absolute top-3 right-3 rounded-full bg-navy/90 backdrop-blur px-3 py-1.5 text-xs font-semibold text-ivory flex items-center gap-1.5 shadow-md pointer-events-none">
+                <Clock className="h-3.5 w-3.5 text-gold" />
+                <span>Disponibilité : {listing.availability}</span>
+              </div>
+            </div>
+          ) : (
+            /* Affichage Photos */
+            gallery.length > 0 && (
+              <>
+                <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl bg-muted shadow-card md:aspect-[21/9]">
+                  <img
+                    src={activeImage}
+                    alt={`${listing.title} - Photo ${activePhotoIndex + 1}`}
+                    className="h-full w-full object-cover transition duration-300"
+                  />
+                  <div className="absolute bottom-3 right-3 rounded-full bg-navy/80 backdrop-blur px-3 py-1 text-xs font-bold text-ivory">
+                    Photo {activePhotoIndex + 1} / {gallery.length}
+                  </div>
+                  <div className="absolute top-3 left-3 rounded-full bg-navy/90 backdrop-blur px-3 py-1.5 text-xs font-semibold text-ivory flex items-center gap-1.5">
+                    <Clock className="h-3.5 w-3.5 text-gold" />
+                    <span>Disponibilité : {listing.availability}</span>
+                  </div>
+                </div>
+
+                {/* Miniatures */}
+                {gallery.length > 1 && (
+                  <div className="flex gap-2 overflow-x-auto pb-2">
+                    {gallery.map((photo, index) => (
+                      <button
+                        key={photo + index}
+                        type="button"
+                        onClick={() => setActivePhotoIndex(index)}
+                        className={`relative aspect-[4/3] h-20 shrink-0 overflow-hidden rounded-lg border-2 transition ${
+                          activePhotoIndex === index
+                            ? "border-gold shadow-md scale-105"
+                            : "border-transparent opacity-70 hover:opacity-100"
+                        }`}
+                        aria-label={`Afficher la photo ${index + 1}`}
+                      >
+                        <img
+                          src={photo}
+                          alt={`Miniature ${index + 1}`}
+                          className="h-full w-full object-cover"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
+            )
           )}
         </section>
 

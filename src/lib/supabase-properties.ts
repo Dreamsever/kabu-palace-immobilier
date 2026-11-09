@@ -83,9 +83,12 @@ export function isVideoUrl(url: string | null | undefined): boolean {
   if (!url) return false;
   const clean = url.trim();
   if (clean.startsWith('video:')) return true;
+  if (clean.startsWith('data:video/')) return true;
   return (
+    clean.includes('/property-images/videos/') ||
+    clean.includes('/videos/') ||
     /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be|vimeo\.com|player\.vimeo\.com)\//i.test(clean) ||
-    /\.(mp4|webm|mov|ogg)(\?.*)?$/i.test(clean)
+    /\.(mp4|webm|mov|ogg|m4v)(\?.*)?$/i.test(clean)
   );
 }
 
