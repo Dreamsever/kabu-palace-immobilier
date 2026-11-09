@@ -524,7 +524,14 @@ export default function AdminPage() {
       setFormData(DEFAULT_FORM);
       setActiveTab("annonces");
     } catch (err) {
-      alert("Erreur lors de l'enregistrement : " + String(err));
+      const msg =
+        err instanceof Error
+          ? err.message
+          : typeof err === "object" && err !== null && "message" in err
+            ? String((err as { message: unknown }).message)
+            : JSON.stringify(err);
+      console.error("[Admin] Erreur enregistrement :", err);
+      alert("Erreur lors de l'enregistrement :\n\n" + msg);
     } finally {
       setSubmitting(false);
     }

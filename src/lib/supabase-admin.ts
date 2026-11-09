@@ -113,7 +113,7 @@ export async function createProperty(payload: PropertyFormData) {
   };
 
   const { data, error } = await supabase.from('properties').insert([row]).select().single();
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? JSON.stringify(error));
   return data;
 }
 
@@ -155,14 +155,14 @@ export async function updateProperty(id: string, payload: Partial<PropertyFormDa
   if (payload.vedette !== undefined) row.vedette = payload.vedette;
 
   const { data, error } = await supabase.from('properties').update(row).eq('id', id).select().single();
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? JSON.stringify(error));
   return data;
 }
 
 export async function deleteProperty(id: string) {
   if (!supabase) throw new Error('Client Supabase non initialisé');
   const { error } = await supabase.from('properties').delete().eq('id', id);
-  if (error) throw error;
+  if (error) throw new Error(error.message ?? JSON.stringify(error));
   return true;
 }
 
