@@ -113,12 +113,12 @@ export function SiteLayout({
             <h4 className="mb-3 text-sm font-bold uppercase tracking-wider text-gold">Services</h4>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link to="/acheter" className="hover:text-gold transition">
+                <Link to="/acheter" search={{ mode: "Acheter" }} className="hover:text-gold transition">
                   Vente de biens
                 </Link>
               </li>
               <li>
-                <Link to="/acheter" className="hover:text-gold transition">
+                <Link to="/acheter" search={{ mode: "Louer" }} className="hover:text-gold transition">
                   Location & gestion
                 </Link>
               </li>
@@ -128,7 +128,7 @@ export function SiteLayout({
                 </Link>
               </li>
               <li>
-                <Link to="/#conseils" className="hover:text-gold transition">
+                <Link to="/" hash="conseils" className="hover:text-gold transition">
                   Conseils Immobiliers
                 </Link>
               </li>
@@ -139,7 +139,7 @@ export function SiteLayout({
             <ul className="space-y-2 text-sm">
               {COMMUNES.map((c) => (
                 <li key={c}>
-                  <Link to="/acheter" className="hover:text-gold transition">
+                  <Link to="/acheter" search={{ commune: c }} className="hover:text-gold transition">
                     {c}
                   </Link>
                 </li>
@@ -181,9 +181,17 @@ export function SiteLayout({
         </div>
         <div className="border-t border-ivory/10 px-4 py-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-ivory/50">
           <span>© {new Date().getFullYear()} Kabu Palace SARL · RCCM Kinshasa · Tous droits réservés</span>
-          <Link to="/admin" className="hover:text-gold transition font-medium">
-            Administration
-          </Link>
+          <div className="flex flex-wrap items-center gap-4">
+            <Link to="/mentions-legales" className="hover:text-gold transition">
+              Mentions Légales
+            </Link>
+            <Link to="/confidentialite" className="hover:text-gold transition">
+              Confidentialité
+            </Link>
+            <Link to="/admin" className="hover:text-gold transition font-medium">
+              Administration
+            </Link>
+          </div>
         </div>
       </footer>
 

@@ -12,7 +12,9 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as CommissionRouteImport } from './routes/commission'
+import { Route as ConfidentialiteRouteImport } from './routes/confidentialite'
 import { Route as ContactRouteImport } from './routes/contact'
+import { Route as MentionsLegalesRouteImport } from './routes/mentions-legales'
 import { Route as VendreRouteImport } from './routes/vendre'
 import { Route as AcheterIndexRouteImport } from './routes/acheter/index'
 import { Route as AcheterIdRouteImport } from './routes/acheter/$id'
@@ -32,9 +34,19 @@ const CommissionRoute = CommissionRouteImport.update({
   path: '/commission',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ConfidentialiteRoute = ConfidentialiteRouteImport.update({
+  id: '/confidentialite',
+  path: '/confidentialite',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ContactRoute = ContactRouteImport.update({
   id: '/contact',
   path: '/contact',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MentionsLegalesRoute = MentionsLegalesRouteImport.update({
+  id: '/mentions-legales',
+  path: '/mentions-legales',
   getParentRoute: () => rootRouteImport,
 } as any)
 const VendreRoute = VendreRouteImport.update({
@@ -57,7 +69,9 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/commission': typeof CommissionRoute
+  '/confidentialite': typeof ConfidentialiteRoute
   '/contact': typeof ContactRoute
+  '/mentions-legales': typeof MentionsLegalesRoute
   '/vendre': typeof VendreRoute
   '/acheter/$id': typeof AcheterIdRoute
   '/acheter/': typeof AcheterIndexRoute
@@ -66,7 +80,9 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/commission': typeof CommissionRoute
+  '/confidentialite': typeof ConfidentialiteRoute
   '/contact': typeof ContactRoute
+  '/mentions-legales': typeof MentionsLegalesRoute
   '/vendre': typeof VendreRoute
   '/acheter/$id': typeof AcheterIdRoute
   '/acheter': typeof AcheterIndexRoute
@@ -76,7 +92,9 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/commission': typeof CommissionRoute
+  '/confidentialite': typeof ConfidentialiteRoute
   '/contact': typeof ContactRoute
+  '/mentions-legales': typeof MentionsLegalesRoute
   '/vendre': typeof VendreRoute
   '/acheter/$id': typeof AcheterIdRoute
   '/acheter/': typeof AcheterIndexRoute
@@ -87,7 +105,9 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/commission'
+    | '/confidentialite'
     | '/contact'
+    | '/mentions-legales'
     | '/vendre'
     | '/acheter/$id'
     | '/acheter/'
@@ -96,7 +116,9 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/commission'
+    | '/confidentialite'
     | '/contact'
+    | '/mentions-legales'
     | '/vendre'
     | '/acheter/$id'
     | '/acheter'
@@ -105,7 +127,9 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/commission'
+    | '/confidentialite'
     | '/contact'
+    | '/mentions-legales'
     | '/vendre'
     | '/acheter/$id'
     | '/acheter/'
@@ -115,7 +139,9 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
   CommissionRoute: typeof CommissionRoute
+  ConfidentialiteRoute: typeof ConfidentialiteRoute
   ContactRoute: typeof ContactRoute
+  MentionsLegalesRoute: typeof MentionsLegalesRoute
   VendreRoute: typeof VendreRoute
   AcheterIdRoute: typeof AcheterIdRoute
   AcheterIndexRoute: typeof AcheterIndexRoute
@@ -144,11 +170,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CommissionRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/confidentialite': {
+      id: '/confidentialite'
+      path: '/confidentialite'
+      fullPath: '/confidentialite'
+      preLoaderRoute: typeof ConfidentialiteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/contact': {
       id: '/contact'
       path: '/contact'
       fullPath: '/contact'
       preLoaderRoute: typeof ContactRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mentions-legales': {
+      id: '/mentions-legales'
+      path: '/mentions-legales'
+      fullPath: '/mentions-legales'
+      preLoaderRoute: typeof MentionsLegalesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/vendre': {
@@ -179,7 +219,9 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
   CommissionRoute: CommissionRoute,
+  ConfidentialiteRoute: ConfidentialiteRoute,
   ContactRoute: ContactRoute,
+  MentionsLegalesRoute: MentionsLegalesRoute,
   VendreRoute: VendreRoute,
   AcheterIdRoute: AcheterIdRoute,
   AcheterIndexRoute: AcheterIndexRoute,

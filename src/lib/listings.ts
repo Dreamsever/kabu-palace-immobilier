@@ -2,27 +2,27 @@ export type Listing = {
   id: number | string; // number pour les données statiques, uuid string pour Supabase
   title: string;
   quartier: string;
-  commune?: string;
-  address?: string;
+  commune?: string | undefined;
+  address?: string | undefined;
   type: string;
   mode: "Acheter" | "Louer";
   price: number;
   beds: number;
   baths: number;
   area: number;
-  landArea?: number;
+  landArea?: number | undefined;
   img: string;
   gallery: string[];
   availability: string;
   history: string;
-  yearBuilt?: number;
+  yearBuilt?: number | undefined;
   legalStatus: string;
   features: string[];
   description: string;
   locationHighlights: string[];
-  featured?: boolean;
-  video?: string;
-  videos?: string[];
+  featured?: boolean | undefined;
+  video?: string | undefined;
+  videos?: string[] | undefined;
 };
 
 const u = (id: string) => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=1200&q=75`;

@@ -37,6 +37,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { COMMUNES, PROPERTY_TYPES, fmtPrice } from "@/lib/listings";
+import { invalidateListingsCache } from "@/hooks/use-listings";
 import {
   adminLogin,
   adminLogout,
@@ -295,15 +296,10 @@ export default function AdminPage() {
           setIsAuthenticated(true);
           setAdminEmail(user.email ?? "admin@kabupalace.cd");
         } else {
-          // Check local PIN / Session
-          const localAuth = localStorage.getItem("kp_admin_logged_in");
-          if (localAuth === "true") {
-            setIsAuthenticated(true);
-            setAdminEmail(localStorage.getItem("kp_admin_email") || "admin@kabupalace.cd");
-          }
+          setIsAuthenticated(false);
         }
       } catch {
-        // Fallback
+        setIsAuthenticated(false);
       } finally {
         setAuthChecking(false);
       }
@@ -345,38 +341,33 @@ export default function AdminPage() {
     setLoginError(null);
     setLoginLoading(true);
 
-    // 1. Supabase Auth attempt
     try {
-      await adminLogin(loginEmail, loginPassword);
+      await adminLogin(loginEmail.trim(), loginPassword);
       setIsAuthenticated(true);
-      setAdminEmail(loginEmail);
-      localStorage.setItem("kp_admin_logged_in", "true");
-      localStorage.setItem("kp_admin_email", loginEmail);
+      setAdminEmail(loginEmail.trim());
       setLoginLoading(false);
       return;
-    } catch {
-      // 2. Master fallback code if Supabase email confirmation is pending
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
       if (
-        (loginEmail === "admin@kabupalace.cd" || loginEmail === "alain@kabupalace.cd" || loginEmail === "admin") &&
-        (loginPassword === "KabuPalace2026!" || loginPassword === "KABU2026!" || loginPassword === "admin123")
+        msg.includes("Invalid login credentials") ||
+        msg.includes("invalid_credentials") ||
+        msg.includes("Invalid credentials")
       ) {
-        setIsAuthenticated(true);
-        setAdminEmail(loginEmail);
-        localStorage.setItem("kp_admin_logged_in", "true");
-        localStorage.setItem("kp_admin_email", loginEmail);
-        setLoginLoading(false);
-        return;
+        setLoginError("Identifiants incorrects. Veuillez vérifier votre adresse email et votre mot de passe.");
+      } else if (msg.includes("Email not confirmed")) {
+        setLoginError(
+          "L'adresse email n'a pas encore été confirmée dans Supabase. Veuillez valider le compte dans le tableau de bord Supabase.",
+        );
+      } else {
+        setLoginError(msg || "Erreur de connexion. Veuillez vérifier vos accès.");
       }
-
-      setLoginError("Identifiants incorrects. Veuillez vérifier votre adresse email et votre mot de passe.");
       setLoginLoading(false);
     }
   };
 
   const handleLogout = async () => {
     await adminLogout();
-    localStorage.removeItem("kp_admin_logged_in");
-    localStorage.removeItem("kp_admin_email");
     setIsAuthenticated(false);
   };
 
@@ -385,6 +376,7 @@ export default function AdminPage() {
     try {
       const current = p.liste !== false && p.listé !== false;
       await togglePropertyVisibility(p.id, current);
+      invalidateListingsCache();
       setProperties((prev) =>
         prev.map((item) => (item.id === p.id ? { ...item, liste: !current, listé: !current } : item)),
       );
@@ -398,6 +390,7 @@ export default function AdminPage() {
     try {
       const current = !!p.vedette;
       await togglePropertyVedette(p.id, current);
+      invalidateListingsCache();
       setProperties((prev) =>
         prev.map((item) => (item.id === p.id ? { ...item, vedette: !current } : item)),
       );
@@ -410,6 +403,7 @@ export default function AdminPage() {
   const handleUpdateAvailability = async (p: SupabaseProperty, newStatus: string) => {
     try {
       await updatePropertyAvailability(p.id, newStatus);
+      invalidateListingsCache();
       setProperties((prev) =>
         prev.map((item) => (item.id === p.id ? { ...item, disponibilite: newStatus, status: newStatus.toLowerCase() } : item)),
       );
@@ -425,6 +419,7 @@ export default function AdminPage() {
     }
     try {
       await deleteProperty(id);
+      invalidateListingsCache();
       setProperties((prev) => prev.filter((item) => item.id !== id));
       showNotification("Annonce supprimée avec succès.");
     } catch (err) {
@@ -517,6 +512,7 @@ export default function AdminPage() {
         await createProperty(formData);
         showNotification("Nouvelle annonce publiée avec succès sur le site !");
       }
+      invalidateListingsCache();
       await loadData();
       setEditingId(null);
       setFormData(DEFAULT_FORM);

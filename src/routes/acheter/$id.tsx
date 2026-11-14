@@ -34,18 +34,30 @@ import { WHATSAPP_DISPLAY, WHATSAPP_E164 } from "@/lib/whatsapp";
 export const Route = createFileRoute("/acheter/$id")({
   head: ({ params }) => {
     const listing = getListingById(params.id);
+    const isRent = listing?.mode === "Louer";
+    const modeLabel = isRent ? "Location" : "Vente";
     return {
       meta: [
         {
           title: listing
-            ? `${listing.title} — Vente à ${listing.quartier} | Kabu Palace`
-            : "Bien immobilier à vendre — Kabu Palace SARL",
+            ? `${listing.title} — ${modeLabel} à ${listing.quartier} | Kabu Palace`
+            : "Bien d'exception à Kinshasa — Kabu Palace SARL",
         },
         {
           name: "description",
           content: listing
-            ? `${listing.title} à vendre à Kinshasa (${listing.quartier}). Prix : ${fmtPrice(listing.price)} $. Disponibilité : ${listing.availability}. Contact WhatsApp direct : ${WHATSAPP_DISPLAY}.`
+            ? `${listing.title} (${listing.quartier}, Kinshasa). Prix : ${fmtPrice(listing.price)} $${isRent ? "/mois" : ""}. Disponibilité : ${listing.availability}. Contact WhatsApp direct : ${WHATSAPP_DISPLAY}.`
             : `Consultez les détails de ce bien immobilier haut de gamme à Kinshasa avec Kabu Palace. Contact : ${WHATSAPP_DISPLAY}.`,
+        },
+        {
+          property: "og:title",
+          content: listing
+            ? `${listing.title} — ${modeLabel} à Kinshasa (${listing.quartier})`
+            : "KABU PALACE SARL",
+        },
+        {
+          property: "og:image",
+          content: listing?.img || "/logo.jpg",
         },
       ],
     };
@@ -234,15 +246,18 @@ function ListingDetailPage() {
   }, [realPhotos, hasVideos, listing]);
 
   const activeImage = gallery[activePhotoIndex] || gallery[0] || listing?.img || "";
+  const isRent = listing?.mode === "Louer";
 
-  const inquiryMessage = `Bonjour Kabu Palace (${WHATSAPP_DISPLAY}), je souhaite acheter ce bien : "${listing.title}" (${listing.quartier}, réf. KP-${listing.id}, au prix de ${fmtPrice(listing.price)} $). Pouvez-vous me transmettre la fiche technique complète et organiser une visite privée ?`;
+  const inquiryMessage = isRent
+    ? `Bonjour Kabu Palace (${WHATSAPP_DISPLAY}), je souhaite louer ce bien : "${listing.title}" (${listing.quartier}, réf. KP-${listing.id}, au loyer de ${fmtPrice(listing.price)} $/mois). Pouvez-vous me transmettre la fiche technique et organiser une visite privée ?`
+    : `Bonjour Kabu Palace (${WHATSAPP_DISPLAY}), je souhaite acheter ce bien : "${listing.title}" (${listing.quartier}, réf. KP-${listing.id}, au prix de ${fmtPrice(listing.price)} $). Pouvez-vous me transmettre la fiche technique complète et organiser une visite privée ?`;
 
   const handleShare = async () => {
     if (typeof navigator !== "undefined" && navigator.share) {
       try {
         await navigator.share({
           title: listing.title,
-          text: `Découvrez ce bien à vendre à Kinshasa (${listing.quartier}) avec Kabu Palace : ${fmtPrice(listing.price)} $`,
+          text: `Découvrez ce bien à ${isRent ? "louer" : "vendre"} à Kinshasa (${listing.quartier}) avec Kabu Palace : ${fmtPrice(listing.price)} $${isRent ? "/mois" : ""}`,
           url: window.location.href,
         });
         return;
@@ -329,14 +344,16 @@ function ListingDetailPage() {
 
           <div className="md:text-right shrink-0">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Prix d'acquisition
+              {isRent ? "Loyer mensuel" : "Prix d'acquisition"}
             </p>
             <p className="font-display text-3xl font-bold text-navy md:text-4xl text-gold">
               {fmtPrice(listing.price)} $
-              <span className="text-sm font-sans font-medium text-muted-foreground"> USD</span>
+              <span className="text-sm font-sans font-medium text-muted-foreground">
+                {isRent ? " USD / mois" : " USD"}
+              </span>
             </p>
             <p className="text-[11px] text-muted-foreground">
-              Titre foncier inclus · Honoraires clairs
+              {isRent ? "Bail notarié sécurisé · Gestion Kabu Palace" : "Titre foncier inclus · Honoraires clairs"}
             </p>
           </div>
         </div>
@@ -665,6 +682,7 @@ function ListingDetailPage() {
                 </p>
                 <p className="mt-1 font-display text-3xl font-bold text-navy text-gold">
                   {fmtPrice(listing.price)} $
+                  {isRent && <span className="text-xs font-sans text-muted-foreground"> / mois</span>}
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   Réf. KP-{listing.id} · {listing.quartier}
@@ -674,7 +692,7 @@ function ListingDetailPage() {
               <div className="mt-5 space-y-3">
                 {/* Bouton WhatsApp principal */}
                 <WhatsAppButton message={inquiryMessage} className="w-full h-13 text-sm shadow-md">
-                  Acheter / Réserver sur WhatsApp
+                  {isRent ? "Louer / Réserver sur WhatsApp" : "Acheter / Réserver sur WhatsApp"}
                 </WhatsAppButton>
 
                 <p className="text-center text-[11px] text-muted-foreground">

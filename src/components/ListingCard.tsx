@@ -15,6 +15,10 @@ export function ListingCard({ listing }: { listing: Listing }) {
           loading="lazy"
           width={800}
           height={600}
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).src =
+              "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=75";
+          }}
           className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
         />
         <span className="absolute left-3 top-3 rounded-full bg-navy/90 backdrop-blur px-3 py-1 text-xs font-bold text-gold shadow-sm">

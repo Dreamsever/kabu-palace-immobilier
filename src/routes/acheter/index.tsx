@@ -1,20 +1,33 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowUpDown, CheckCircle2, Database, RotateCcw, SlidersHorizontal, Sparkles } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ListingCard } from "@/components/ListingCard";
 import { FilterSelect, SiteLayout } from "@/components/SiteLayout";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
-import { PROPERTY_TYPES, COMMUNES, SALE_PRICE_FILTERS } from "@/lib/listings";
+import { PROPERTY_TYPES, COMMUNES, BUY_PRICE_FILTERS, RENT_PRICE_FILTERS } from "@/lib/listings";
 import { WHATSAPP_DISPLAY } from "@/lib/whatsapp";
 import { useListings } from "@/hooks/use-listings";
 
+export type AcheterSearch = {
+  commune?: string | undefined;
+  mode?: "Acheter" | "Louer" | undefined;
+  type?: string | undefined;
+};
+
 export const Route = createFileRoute("/acheter/")({
+  validateSearch: (search: Record<string, unknown>): AcheterSearch => ({
+    commune: typeof search['commune'] === "string" ? search['commune'] : undefined,
+    mode: search['mode'] === "Louer" ? "Louer" : search['mode'] === "Acheter" ? "Acheter" : undefined,
+    type: typeof search['type'] === "string" ? search['type'] : undefined,
+  }),
   head: () => ({
     meta: [
-      { title: "Acheter un bien immobilier à Kinshasa — Kabu Palace SARL" },
+      {
+        title: "Acheter ou Louer un bien d'exception à Kinshasa — Kabu Palace SARL",
+      },
       {
         name: "description",
-        content: `Achetez votre villa, appartement ou terrain de prestige à Kinshasa (Gombe, Ngaliema, Limete, Mont-Ngafula). Filtres par prix et quartier. Contact WhatsApp direct au ${WHATSAPP_DISPLAY}.`,
+        content: `Achetez ou louez votre villa, appartement meublé ou terrain de prestige à Kinshasa (Gombe, Ngaliema, Limete, Mont-Ngafula). Filtres par prix et quartier. Contact WhatsApp direct au ${WHATSAPP_DISPLAY}.`,
       },
     ],
   }),
@@ -24,18 +37,44 @@ export const Route = createFileRoute("/acheter/")({
 type SortOption = "recommandes" | "prix-croissant" | "prix-decroissant" | "surface-decroissante";
 
 function AcheterPage() {
+  const searchParams = Route.useSearch();
   const { listings: allListings, loading, fromSupabase } = useListings();
-  const [commune, setCommune] = useState<string>("Tous");
-  const [pricePreset, setPricePreset] = useState<string>(SALE_PRICE_FILTERS[0].label);
-  const [propertyType, setPropertyType] = useState<string>("Tous");
+
+  const [mode, setMode] = useState<"Acheter" | "Louer">(searchParams.mode || "Acheter");
+  const [commune, setCommune] = useState<string>(searchParams.commune || "Tous");
+  const [propertyType, setPropertyType] = useState<string>(searchParams.type || "Tous");
+
+  const currentPriceFilters = mode === "Acheter" ? BUY_PRICE_FILTERS : RENT_PRICE_FILTERS;
+  const [pricePreset, setPricePreset] = useState<string>(currentPriceFilters[0].label);
   const [minPriceInput, setMinPriceInput] = useState<string>("");
   const [maxPriceInput, setMaxPriceInput] = useState<string>("");
   const [useCustomRange, setUseCustomRange] = useState<boolean>(false);
   const [sortBy, setSortBy] = useState<SortOption>("recommandes");
 
+  // Synchronisation avec les paramètres d'URL s'ils changent (ex: clic dans le footer)
+  useEffect(() => {
+    if (searchParams.mode && searchParams.mode !== mode) {
+      setMode(searchParams.mode);
+      setPricePreset(searchParams.mode === "Acheter" ? BUY_PRICE_FILTERS[0].label : RENT_PRICE_FILTERS[0].label);
+    }
+    if (searchParams.commune && searchParams.commune !== commune) {
+      setCommune(searchParams.commune);
+    }
+    if (searchParams.type && searchParams.type !== propertyType) {
+      setPropertyType(searchParams.type);
+    }
+  }, [searchParams.mode, searchParams.commune, searchParams.type]);
+
+  const handleModeChange = (newMode: "Acheter" | "Louer") => {
+    setMode(newMode);
+    setPricePreset(newMode === "Acheter" ? BUY_PRICE_FILTERS[0].label : RENT_PRICE_FILTERS[0].label);
+    setMinPriceInput("");
+    setMaxPriceInput("");
+  };
+
   const activePreset = useMemo(
-    () => SALE_PRICE_FILTERS.find((p) => p.label === pricePreset) ?? SALE_PRICE_FILTERS[0],
-    [pricePreset],
+    () => currentPriceFilters.find((p) => p.label === pricePreset) ?? currentPriceFilters[0],
+    [currentPriceFilters, pricePreset],
   );
 
   const parsedMin = useCustomRange
@@ -54,11 +93,11 @@ function AcheterPage() {
     propertyType !== "Tous" ||
     (useCustomRange
       ? minPriceInput !== "" || maxPriceInput !== ""
-      : pricePreset !== SALE_PRICE_FILTERS[0].label);
+      : pricePreset !== currentPriceFilters[0].label);
 
   const resetFilters = () => {
     setCommune("Tous");
-    setPricePreset(SALE_PRICE_FILTERS[0].label);
+    setPricePreset(currentPriceFilters[0].label);
     setPropertyType("Tous");
     setMinPriceInput("");
     setMaxPriceInput("");
@@ -68,7 +107,7 @@ function AcheterPage() {
 
   const results = useMemo(() => {
     const filtered = allListings.filter((l) => {
-      if (l.mode !== "Acheter") return false;
+      if (l.mode !== mode) return false;
       const matchCommune =
         commune === "Tous" ||
         l.commune?.toLowerCase() === commune.toLowerCase() ||
@@ -88,7 +127,7 @@ function AcheterPage() {
       if (!a.featured && b.featured) return 1;
       return 0;
     });
-  }, [allListings, commune, propertyType, parsedMin, parsedMax, sortBy]);
+  }, [allListings, mode, commune, propertyType, parsedMin, parsedMax, sortBy]);
 
   const emptyStateMessage = useMemo(() => {
     const qPart = commune === "Tous" ? "à Kinshasa" : `à ${commune}`;
@@ -101,8 +140,9 @@ function AcheterPage() {
         : "";
     const tPart =
       propertyType === "Tous" ? "un bien immobilier" : `un(e) ${propertyType.toLowerCase()}`;
-    return `Bonjour Kabu Palace (${WHATSAPP_DISPLAY}), je cherche à acheter ${tPart} ${qPart}${pPart}. Avez-vous des offres hors catalogue ?`;
-  }, [commune, propertyType, pricePreset, useCustomRange, minPriceInput, maxPriceInput]);
+    const actionWord = mode === "Acheter" ? "acheter" : "louer";
+    return `Bonjour Kabu Palace (${WHATSAPP_DISPLAY}), je cherche à ${actionWord} ${tPart} ${qPart}${pPart}. Avez-vous des offres hors catalogue ?`;
+  }, [mode, commune, propertyType, pricePreset, useCustomRange, minPriceInput, maxPriceInput]);
 
   return (
     <SiteLayout>
@@ -112,19 +152,47 @@ function AcheterPage() {
         <div className="mx-auto max-w-6xl relative z-10">
           <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.3em] text-gold">
             <Sparkles className="h-4 w-4" />
-            <span>Catalogue Vente Exclusive</span>
+            <span>Catalogue Prestige & Biens Vérifiés</span>
           </div>
           <h1 className="mt-3 font-display text-4xl font-bold leading-tight md:text-5xl lg:text-6xl">
-            Acheter un bien d'exception à <span className="text-gold">Kinshasa</span>
+            {mode === "Acheter" ? "Acheter un bien d'exception à" : "Louer un bien d'exception à"}{" "}
+            <span className="text-gold">Kinshasa</span>
           </h1>
           <p className="mt-4 max-w-2xl text-base text-ivory/80 md:text-lg">
-            Explorez notre sélection rigoureuse de villas de luxe, appartements standing et terrains
-            sécurisés avec titre foncier à Gombe, Ngaliema, Limete et Mont-Ngafula.
+            {mode === "Acheter"
+              ? "Explorez notre sélection rigoureuse de villas de luxe, appartements standing et parcelles titrées à vendre à Gombe, Ngaliema, Limete et dans toute la capitale."
+              : "Découvrez nos résidences meublées, appartements contemporains et villas de prestige disponibles à la location longue ou moyenne durée à Kinshasa."}
           </p>
+
+          {/* Mode Switcher Tabs */}
+          <div className="mt-6 inline-flex rounded-xl bg-card/15 p-1 border border-gold/30 backdrop-blur">
+            <button
+              type="button"
+              onClick={() => handleModeChange("Acheter")}
+              className={`h-10 px-5 rounded-lg text-sm font-bold transition-all ${
+                mode === "Acheter"
+                  ? "bg-gold text-gold-foreground shadow-md"
+                  : "text-ivory/80 hover:text-ivory"
+              }`}
+            >
+              Biens à vendre (Achat)
+            </button>
+            <button
+              type="button"
+              onClick={() => handleModeChange("Louer")}
+              className={`h-10 px-5 rounded-lg text-sm font-bold transition-all ${
+                mode === "Louer"
+                  ? "bg-gold text-gold-foreground shadow-md"
+                  : "text-ivory/80 hover:text-ivory"
+              }`}
+            >
+              Biens à louer (Location)
+            </button>
+          </div>
 
           <div className="mt-6 flex flex-wrap items-center gap-4 text-xs text-ivory/70 md:gap-6">
             <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="h-4 w-4 text-gold" /> Titres fonciers vérifiés
+              <CheckCircle2 className="h-4 w-4 text-gold" /> Titres fonciers & baux certifiés
             </span>
             <span className="flex items-center gap-1.5">
               <CheckCircle2 className="h-4 w-4 text-gold" /> Visites privées sur mesure
@@ -147,7 +215,7 @@ function AcheterPage() {
             <div className="flex items-center gap-2">
               <SlidersHorizontal className="h-5 w-5 text-gold" />
               <h2 className="font-sans text-base font-bold text-foreground">
-                Filtres de recherche
+                Filtres de recherche ({mode === "Acheter" ? "Vente" : "Location"})
               </h2>
             </div>
             <div className="flex items-center gap-3">
@@ -188,10 +256,10 @@ function AcheterPage() {
             {/* Price Filter (Preset or Custom) */}
             {!useCustomRange ? (
               <FilterSelect
-                label="Budget (Prix)"
+                label={mode === "Acheter" ? "Budget (Prix)" : "Budget (Prix) - Loyer/mois"}
                 value={pricePreset}
                 onChange={setPricePreset}
-                options={SALE_PRICE_FILTERS.map((p) => p.label)}
+                options={currentPriceFilters.map((p) => p.label)}
               />
             ) : (
               <div className="grid grid-cols-2 gap-2">
@@ -202,7 +270,7 @@ function AcheterPage() {
                   <input
                     type="number"
                     min={0}
-                    step={10000}
+                    step={mode === "Acheter" ? 10000 : 500}
                     placeholder="Min"
                     value={minPriceInput}
                     onChange={(e) => setMinPriceInput(e.target.value)}
@@ -216,7 +284,7 @@ function AcheterPage() {
                   <input
                     type="number"
                     min={0}
-                    step={10000}
+                    step={mode === "Acheter" ? 10000 : 500}
                     placeholder="Max"
                     value={maxPriceInput}
                     onChange={(e) => setMaxPriceInput(e.target.value)}
@@ -281,7 +349,7 @@ function AcheterPage() {
               ) : (
                 <>
                   {results.length} bien{results.length > 1 ? "s" : ""} disponible
-                  {results.length > 1 ? "s" : ""} à l'achat
+                  {results.length > 1 ? "s" : ""} {mode === "Acheter" ? "à l'achat" : "à la location"}
                   {commune !== "Tous" && <span className="text-gold font-bold"> · {commune}</span>}
                   {!useCustomRange && pricePreset !== "Tous les prix" && (
                     <span className="text-muted-foreground"> ({pricePreset})</span>
@@ -355,11 +423,14 @@ function AcheterPage() {
                 Propriétaire à Kinshasa ?
               </span>
               <h2 className="mt-2 font-display text-2xl font-bold md:text-3xl">
-                Vous souhaitez vendre votre bien immobilier ?
+                {mode === "Acheter"
+                  ? "Vous souhaitez vendre votre bien immobilier ?"
+                  : "Vous souhaitez confier la location de votre bien ?"}
               </h2>
               <p className="mt-2 text-sm text-ivory/80">
-                Kabu Palace vous met en relation directe avec des acquéreurs solvables à Kinshasa et
-                dans la diaspora. Estimation gratuite et discrète.
+                {mode === "Acheter"
+                  ? "Kabu Palace vous met en relation directe avec des acquéreurs solvables à Kinshasa et dans la diaspora. Estimation gratuite et discrète."
+                  : "Bénéficiez de notre gestion locative rigoureuse, sélection de locataires vérifiés et valorisation optimale de votre patrimoine."}
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-3 md:justify-end">
@@ -367,10 +438,10 @@ function AcheterPage() {
                 to="/vendre"
                 className="inline-flex h-11 items-center justify-center rounded-lg bg-gold-gradient px-6 font-bold text-gold-foreground transition hover:brightness-105"
               >
-                Vendre mon bien
+                {mode === "Acheter" ? "Vendre mon bien" : "Proposer mon bien"}
               </Link>
               <WhatsAppButton
-                message={`Bonjour Kabu Palace (${WHATSAPP_DISPLAY}), je souhaite des renseignements pour vendre un bien immobilier.`}
+                message={`Bonjour Kabu Palace (${WHATSAPP_DISPLAY}), je souhaite des renseignements pour confier la ${mode === "Acheter" ? "vente" : "mise en location"} d'un bien immobilier.`}
                 variant="outline"
                 className="border-ivory/30 text-ivory hover:bg-ivory hover:text-navy"
               >

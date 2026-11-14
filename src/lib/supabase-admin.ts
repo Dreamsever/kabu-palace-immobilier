@@ -13,15 +13,15 @@ export interface PropertyFormData {
   monnaie: string;
   prix_negociable: boolean;
   surface: number;
-  surface_terrain?: number;
+  surface_terrain?: number | undefined;
   chambres: number;
   salles_de_bain: number;
-  annee_construction?: number;
+  annee_construction?: number | undefined;
   statut_juridique: string;
   disponibilite: string;
   status: string;
   images: string[];
-  videos?: string[];
+  videos?: string[] | undefined;
   atouts: string[];
   points_forts: string[];
   liste: boolean;
@@ -124,35 +124,35 @@ export async function updateProperty(id: string, payload: Partial<PropertyFormDa
     updated_at: new Date().toISOString(),
   };
 
-  if (payload.titre !== undefined) row.titre = payload.titre;
-  if (payload.description !== undefined) row.description = payload.description;
-  if (payload.categorie !== undefined) row.categorie = payload.categorie;
-  if (payload.type !== undefined) row.type = payload.type;
-  if (payload.district !== undefined) row.district = payload.district;
-  if (payload.commune !== undefined) row.commune = payload.commune;
-  if (payload.adresse !== undefined) row.adresse = payload.adresse;
-  if (payload.prix !== undefined) row.prix = Number(payload.prix);
-  if (payload.monnaie !== undefined) row.monnaie = payload.monnaie;
-  if (payload.prix_negociable !== undefined) row.prix_negociable = payload.prix_negociable;
-  if (payload.surface !== undefined) row.surface = Number(payload.surface);
+  if (payload.titre !== undefined) row['titre'] = payload.titre;
+  if (payload.description !== undefined) row['description'] = payload.description;
+  if (payload.categorie !== undefined) row['categorie'] = payload.categorie;
+  if (payload.type !== undefined) row['type'] = payload.type;
+  if (payload.district !== undefined) row['district'] = payload.district;
+  if (payload.commune !== undefined) row['commune'] = payload.commune;
+  if (payload.adresse !== undefined) row['adresse'] = payload.adresse;
+  if (payload.prix !== undefined) row['prix'] = Number(payload.prix);
+  if (payload.monnaie !== undefined) row['monnaie'] = payload.monnaie;
+  if (payload.prix_negociable !== undefined) row['prix_negociable'] = payload.prix_negociable;
+  if (payload.surface !== undefined) row['surface'] = Number(payload.surface);
   if (payload.surface_terrain !== undefined)
-    row.surface_terrain = payload.surface_terrain ? Number(payload.surface_terrain) : null;
-  if (payload.chambres !== undefined) row.chambres = Number(payload.chambres);
-  if (payload.salles_de_bain !== undefined) row.salles_de_bain = Number(payload.salles_de_bain);
+    row['surface_terrain'] = payload.surface_terrain ? Number(payload.surface_terrain) : null;
+  if (payload.chambres !== undefined) row['chambres'] = Number(payload.chambres);
+  if (payload.salles_de_bain !== undefined) row['salles_de_bain'] = Number(payload.salles_de_bain);
   if (payload.annee_construction !== undefined)
-    row.annee_construction = payload.annee_construction ? Number(payload.annee_construction) : null;
-  if (payload.statut_juridique !== undefined) row.statut_juridique = payload.statut_juridique;
-  if (payload.disponibilite !== undefined) row.disponibilite = payload.disponibilite;
-  if (payload.status !== undefined) row.status = payload.status;
+    row['annee_construction'] = payload.annee_construction ? Number(payload.annee_construction) : null;
+  if (payload.statut_juridique !== undefined) row['statut_juridique'] = payload.statut_juridique;
+  if (payload.disponibilite !== undefined) row['disponibilite'] = payload.disponibilite;
+  if (payload.status !== undefined) row['status'] = payload.status;
   if (payload.images !== undefined || payload.videos !== undefined) {
     const imgs = (payload.images || []).filter(Boolean);
     const vids = (payload.videos || []).filter(Boolean).map((v) => (v.startsWith('video:') ? v : `video:${v}`));
-    row.images = JSON.stringify([...imgs, ...vids]);
+    row['images'] = JSON.stringify([...imgs, ...vids]);
   }
-  if (payload.atouts !== undefined) row.atouts = payload.atouts.filter(Boolean);
-  if (payload.points_forts !== undefined) row.points_forts = payload.points_forts.filter(Boolean);
-  if (payload.liste !== undefined) row.liste = payload.liste;
-  if (payload.vedette !== undefined) row.vedette = payload.vedette;
+  if (payload.atouts !== undefined) row['atouts'] = payload.atouts.filter(Boolean);
+  if (payload.points_forts !== undefined) row['points_forts'] = payload.points_forts.filter(Boolean);
+  if (payload.liste !== undefined) row['liste'] = payload.liste;
+  if (payload.vedette !== undefined) row['vedette'] = payload.vedette;
 
   const { data, error } = await supabase.from('properties').update(row).eq('id', id).select().single();
   if (error) throw new Error(error.message ?? JSON.stringify(error));
@@ -255,6 +255,90 @@ export async function uploadPropertyVideo(file: File): Promise<string> {
 }
 
 // 3. Leads Propriétaires (Vendre mon bien)
+export async function createSellerLead(payload: {
+  nom: string;
+  telephone: string;
+  email?: string | undefined;
+  statut_proprietaire: string;
+  type_bien: string;
+  district: string;
+  adresse?: string | undefined;
+  prix_souhaite?: number | undefined;
+  prix_negociable?: boolean | undefined;
+  surface?: number | undefined;
+  chambres?: number | undefined;
+  salles_de_bain?: number | undefined;
+  titre_foncier?: string | undefined;
+  atouts?: string[] | undefined;
+  details?: string | undefined;
+}) {
+  if (!supabase) return null;
+  const row = {
+    nom: payload.nom,
+    telephone: payload.telephone,
+    email: payload.email || null,
+    statut_proprietaire: payload.statut_proprietaire,
+    type_bien: payload.type_bien,
+    district: payload.district,
+    adresse: payload.adresse || null,
+    prix_souhaite: payload.prix_souhaite ?? null,
+    prix_negociable: payload.prix_negociable ?? true,
+    surface: payload.surface ?? null,
+    chambres: payload.chambres ?? null,
+    salles_de_bain: payload.salles_de_bain ?? null,
+    titre_foncier: payload.titre_foncier || null,
+    atouts: payload.atouts || [],
+    details: payload.details || null,
+    statut_dossier: 'nouveau',
+  };
+  try {
+    const { data, error } = await supabase.from('seller_leads').insert([row]).select().single();
+    if (error) {
+      console.warn('[Supabase] createSellerLead warning:', error.message);
+      return null;
+    }
+    return data;
+  } catch (err) {
+    console.warn('[Supabase] createSellerLead exception:', err);
+    return null;
+  }
+}
+
+export async function createInquiry(payload: {
+  property_id?: string | null | undefined;
+  nom: string;
+  telephone: string;
+  email?: string | null | undefined;
+  type_demande: 'visite' | 'information' | 'offre_achat' | 'hors_catalogue';
+  message?: string | null | undefined;
+  date_visite_souhaitee?: string | null | undefined;
+  budget_max?: number | null | undefined;
+}) {
+  if (!supabase) return null;
+  const row = {
+    property_id: payload.property_id || null,
+    nom: payload.nom,
+    telephone: payload.telephone,
+    email: payload.email || null,
+    type_demande: payload.type_demande,
+    message: payload.message || null,
+    date_visite_souhaitee: payload.date_visite_souhaitee || null,
+    budget_max: payload.budget_max ?? null,
+    statut: 'a_traiter',
+  };
+  try {
+    const { data, error } = await supabase.from('inquiries').insert([row]).select().single();
+    if (error) {
+      console.warn('[Supabase] createInquiry warning:', error.message);
+      return null;
+    }
+    return data;
+  } catch (err) {
+    console.warn('[Supabase] createInquiry exception:', err);
+    return null;
+  }
+}
+
 export async function fetchSellerLeads(): Promise<SellerLead[]> {
   if (!supabase) return [];
   const { data, error } = await supabase

@@ -19,6 +19,10 @@ export type UseListingsResult = {
 // Cache en mémoire pour éviter les re-fetchs inutiles entre pages
 let cachedListings: Listing[] | null = null;
 
+export function invalidateListingsCache(): void {
+  cachedListings = null;
+}
+
 export function useListings(): UseListingsResult {
   const [listings, setListings] = useState<Listing[]>(cachedListings ?? []);
   const [loading, setLoading] = useState<boolean>(!cachedListings);

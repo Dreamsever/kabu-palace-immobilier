@@ -17,6 +17,7 @@ import { useId, useMemo, useState, type ReactNode } from "react";
 import { FilterSelect, SiteLayout } from "@/components/SiteLayout";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { PROPERTY_TYPES, QUARTIERS } from "@/lib/listings";
+import { createSellerLead } from "@/lib/supabase-admin";
 import { buildWhatsAppUrl, WHATSAPP_DISPLAY } from "@/lib/whatsapp";
 
 export const Route = createFileRoute("/vendre")({
@@ -140,6 +141,28 @@ function VendrePage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitted(true);
+
+    // Enregistrement sécurisé en base de données pour l'administration Kabu Palace
+    createSellerLead({
+      nom: nom.trim(),
+      telephone: telephone.trim(),
+      email: email.trim() || undefined,
+      statut_proprietaire: statutProprietaire,
+      type_bien: type,
+      district: quartierFinal,
+      adresse: adresse.trim() || undefined,
+      prix_souhaite: prix ? Number(prix) : undefined,
+      prix_negociable: prixNegociable,
+      surface: surface ? Number(surface) : undefined,
+      chambres: chambres ? Number(chambres) : undefined,
+      salles_de_bain: sallesDeBain ? Number(sallesDeBain) : undefined,
+      titre_foncier: titreFoncier,
+      atouts: selectedAtouts,
+      details: details.trim() || undefined,
+    }).catch((err) => {
+      console.warn("Enregistrement du lead vendeur en arrière-plan :", err);
+    });
+
     const targetUrl = buildWhatsAppUrl(formattedMessage);
     if (typeof window !== "undefined") {
       window.open(targetUrl, "_blank", "noopener,noreferrer");

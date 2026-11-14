@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { SiteLayout } from "@/components/SiteLayout";
 import { COMMUNES } from "@/lib/listings";
+import { createInquiry } from "@/lib/supabase-admin";
 import { buildWhatsAppUrl, WHATSAPP_DISPLAY, WHATSAPP_E164 } from "@/lib/whatsapp";
 
 export const Route = createFileRoute("/commission")({
@@ -184,6 +185,17 @@ export default function CommissionPage() {
 
     setFormattedMessage(message);
     setSubmitted(true);
+
+    // Enregistrement de l'opportunité de partenariat en base
+    createInquiry({
+      nom: nom.trim(),
+      telephone: telephone.trim(),
+      email: email.trim() || undefined,
+      type_demande: "offre_achat",
+      message: `[100% COMMISSION+] Affaire: ${typeAffaire} | Bien: ${typeBien} | Loc: ${localisation.trim()} | Prix: ${prix.trim() || "N/A"} | Client: ${nomClient.trim()} (${contactClient.trim() || "N/A"}) | Détails: ${description.trim() || "N/A"}`,
+    }).catch((err) => {
+      console.warn("Enregistrement de l'opportunité partenaire en base :", err);
+    });
 
     const url = buildWhatsAppUrl(message, WHATSAPP_E164);
     window.open(url, "_blank", "noopener,noreferrer");

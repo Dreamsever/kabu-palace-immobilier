@@ -189,7 +189,7 @@ export interface FetchResult<T> {
 
 export async function fetchProperties(): Promise<FetchResult<Listing>> {
   // Dans l'environnement de test automatisé (vitest), fournir les annonces statiques pour les tests unitaires
-  if (import.meta.env.MODE === 'test' || (typeof process !== 'undefined' && process.env.NODE_ENV === 'test')) {
+  if (import.meta.env.MODE === 'test' || (typeof process !== 'undefined' && process.env && process.env['NODE_ENV'] === 'test')) {
     const { LISTINGS } = await import('./listings');
     return { data: LISTINGS, error: null };
   }
@@ -256,7 +256,7 @@ export async function fetchPropertyById(
   id: string,
 ): Promise<{ data: Listing | null; error: string | null }> {
   // Dans l'environnement de test automatisé (vitest), résoudre depuis la liste statique
-  if (import.meta.env.MODE === 'test' || (typeof process !== 'undefined' && process.env.NODE_ENV === 'test')) {
+  if (import.meta.env.MODE === 'test' || (typeof process !== 'undefined' && process.env && process.env['NODE_ENV'] === 'test')) {
     const { LISTINGS } = await import('./listings');
     const legacyTarget = LEGACY_ID_MAP[id] ?? id;
     const found =

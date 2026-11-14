@@ -15,6 +15,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { SiteLayout } from "@/components/SiteLayout";
+import { createInquiry } from "@/lib/supabase-admin";
 import { buildWhatsAppUrl, WHATSAPP_DISPLAY, WHATSAPP_E164 } from "@/lib/whatsapp";
 
 export const Route = createFileRoute("/contact")({
@@ -114,6 +115,18 @@ export default function ContactPage() {
 
     const url = buildWhatsAppUrl(fullMsg, WHATSAPP_E164);
     setSentWhatsApp(true);
+
+    // Enregistrement de la demande de contact en base
+    createInquiry({
+      nom: nom.trim(),
+      telephone: telephone.trim(),
+      email: email.trim() || undefined,
+      type_demande: "information",
+      message: `[Sujet: ${sujet}] ${message.trim() || "Demande de contact"}`,
+    }).catch((err) => {
+      console.warn("Enregistrement du contact en base :", err);
+    });
+
     window.open(url, "_blank", "noopener,noreferrer");
   };
 
