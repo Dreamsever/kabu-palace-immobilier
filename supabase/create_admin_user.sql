@@ -15,8 +15,12 @@ DECLARE
   new_user_id UUID := gen_random_uuid();
   admin_email TEXT := 'admin@kabupalace.cd';
   admin_password TEXT := 'KabuPalace2026!';
+  existing_user_id UUID;
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM auth.users WHERE email = admin_email) THEN
+  SELECT id INTO existing_user_id FROM auth.users WHERE email = admin_email;
+
+  IF existing_user_id IS NULL THEN
+    -- Insertion dans auth.users
     INSERT INTO auth.users (
       id,
       instance_id,
@@ -28,7 +32,11 @@ BEGIN
       created_at,
       updated_at,
       role,
-      aud
+      aud,
+      confirmation_token,
+      recovery_token,
+      email_change_token_new,
+      email_change
     ) VALUES (
       new_user_id,
       '00000000-0000-0000-0000-000000000000',
@@ -40,7 +48,32 @@ BEGIN
       now(),
       now(),
       'authenticated',
-      'authenticated'
+      'authenticated',
+      '',
+      '',
+      '',
+      ''
+    );
+
+    -- Insertion obligatoire dans auth.identities (indispensable pour éviter "Database error querying schema")
+    INSERT INTO auth.identities (
+      id,
+      user_id,
+      identity_data,
+      provider,
+      provider_id,
+      last_sign_in_at,
+      created_at,
+      updated_at
+    ) VALUES (
+      new_user_id,
+      new_user_id,
+      format('{"sub":"%s","email":"%s"}', new_user_id::text, admin_email)::jsonb,
+      'email',
+      new_user_id::text,
+      now(),
+      now(),
+      now()
     );
   ELSE
     -- Mettre à jour le mot de passe et confirmer l'email si déjà existant
@@ -48,7 +81,30 @@ BEGIN
     SET encrypted_password = crypt(admin_password, gen_salt('bf')),
         email_confirmed_at = now(),
         raw_app_meta_data = '{"provider":"email","providers":["email"],"role":"admin"}'
-    WHERE email = admin_email;
+    WHERE id = existing_user_id;
+
+    -- S'assurer que l'entrée auth.identities existe
+    IF NOT EXISTS (SELECT 1 FROM auth.identities WHERE user_id = existing_user_id) THEN
+      INSERT INTO auth.identities (
+        id,
+        user_id,
+        identity_data,
+        provider,
+        provider_id,
+        last_sign_in_at,
+        created_at,
+        updated_at
+      ) VALUES (
+        existing_user_id,
+        existing_user_id,
+        format('{"sub":"%s","email":"%s"}', existing_user_id::text, admin_email)::jsonb,
+        'email',
+        existing_user_id::text,
+        now(),
+        now(),
+        now()
+      );
+    END IF;
   END IF;
 END $$;
 
